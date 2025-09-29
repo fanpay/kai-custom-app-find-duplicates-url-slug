@@ -14,12 +14,17 @@ const findBtn = document.getElementById('find-btn')!;
 
 findBtn.addEventListener('click', async () => {
   resultDiv.innerHTML = 'Buscando...';
-  const duplicates = await findDuplicateSlugs();
+  const result = await findDuplicateSlugs();
+  if ('error' in result) {
+    resultDiv.innerHTML = `<p style="color:red">${result.error}</p>`;
+    return;
+  }
+  const duplicates = result.duplicates || [];
   if (duplicates.length === 0) {
     resultDiv.innerHTML = '<p>No hay coincidencias de slugs duplicados.</p>';
   } else {
     resultDiv.innerHTML = '<h2>Slugs duplicados:</h2>' +
-      duplicates.map(d => `<div><b>${d.slug}</b>:<ul>${d.items.map((i: string) => `<li>${i}</li>`).join('')}</ul></div>`).join('');
+      duplicates.map((d: any) => `<div><b>${d.slug}</b>:<ul>${d.items.map((i: string) => `<li>${i}</li>`).join('')}</ul></div>`).join('');
   }
 });
 
@@ -30,26 +35,36 @@ async function findDuplicateSlugs() {
   const apiKey = (import.meta as any).env?.VITE_KONTENT_API_KEY || process.env.KONTENT_API_KEY;
   const environmentId = (import.meta as any).env?.VITE_KONTENT_ENVIRONMENT_ID || process.env.KONTENT_ENVIRONMENT_ID;
 
-  // Fetch all items of type 'page'
-  const url = `https://deliver.kontent.ai/${projectId}/items?system.type=page&elements=url_slug&limit=1000`;
-  const res = await fetch(url, {
-    headers: apiKey ? { 'Authorization': `Bearer ${apiKey}` } : {}
-  });
-  const data = await res.json();
-  const items = data.items || [];
-
-  // Agrupar por slug
-  const slugMap = new Map();
-  for (const item of items) {
-    const slug = item.elements.url_slug.value;
-    if (!slugMap.has(slug)) slugMap.set(slug, []);
-    slugMap.get(slug).push(item.system.name);
+  if (!projectId) {
+    return { error: 'Falta configurar el Project ID de Kontent.ai.' };
   }
-  // Filtrar duplicados
-  const duplicates = Array.from(slugMap.entries())
-    .filter(([slug, arr]) => arr.length > 1)
-    .map(([slug, arr]) => ({ slug, items: arr }));
-  return duplicates;
+
+  try {
+    const url = `https://deliver.kontent.ai/${projectId}/items?system.type=page&elements=url_slug&limit=1000`;
+    const res = await fetch(url, {
+      headers: apiKey ? { 'Authorization': `Bearer ${apiKey}` } : {}
+    });
+    if (!res.ok) {
+      return { error: `Error al consultar la API: ${res.status} ${res.statusText}` };
+    }
+    const data = await res.json();
+    const items = data.items || [];
+
+    // Agrupar por slug
+    const slugMap = new Map();
+    for (const item of items) {
+      const slug = item.elements.url_slug.value;
+      if (!slugMap.has(slug)) slugMap.set(slug, []);
+      slugMap.get(slug).push(item.system.name);
+    }
+    // Filtrar duplicados
+    const duplicates = Array.from(slugMap.entries())
+      .filter(([slug, arr]) => arr.length > 1)
+      .map(([slug, arr]) => ({ slug, items: arr }));
+    return { duplicates };
+  } catch (err: any) {
+    return { error: 'Error inesperado: ' + (err?.message || err) };
+  }
 }
 
 // Inicializar el custom app (opcional, para integración con Kontent)
