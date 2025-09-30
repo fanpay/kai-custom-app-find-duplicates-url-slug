@@ -45,7 +45,6 @@ async function findDuplicateSlugs() {
     if (!ctx.isError && ctx.context?.environmentId) {
       projectId = ctx.context.environmentId;
     }
-    // If you have config with apiKey, you can use it here
     // if (ctx.config?.apiKey) apiKey = ctx.config.apiKey;
   } catch {}
 
@@ -54,17 +53,30 @@ async function findDuplicateSlugs() {
   }
 
   try {
-    const url = `https://deliver.kontent.ai/${projectId}/items?system.type=page&elements=url_slug&limit=1000`;
-    const res = await fetch(url, {
-      headers: apiKey ? { 'Authorization': `Bearer ${apiKey}` } : {}
-    });
-    if (!res.ok) {
-      return { error: `Error fetching from API: ${res.status} ${res.statusText}` };
+    let items: any[] = [];
+    let skip = 0;
+    const pageSize = 1000;
+    let more = true;
+
+    while (more) {
+      const url = `https://deliver.kontent.ai/${projectId}/items?system.type=page&elements=url_slug&limit=${pageSize}&skip=${skip}`;
+      const res = await fetch(url, {
+        headers: apiKey ? { 'Authorization': `Bearer ${apiKey}` } : {}
+      });
+      if (!res.ok) {
+        return { error: `Error fetching from API: ${res.status} ${res.statusText}` };
+      }
+      const data = await res.json();
+      const newItems = (data.items || []).filter(
+        (item: any) => item.system?.type === 'page' && item.elements?.url_slug?.value
+      );
+      items = items.concat(newItems);
+      if (data.pagination?.next_page) {
+        skip += pageSize;
+      } else {
+        more = false;
+      }
     }
-    const data = await res.json();
-    const items = (data.items || []).filter(
-      (item: any) => item.system?.type === 'page' && item.elements?.url_slug?.value
-    );
 
     // Group by slug
     const slugMap = new Map();
