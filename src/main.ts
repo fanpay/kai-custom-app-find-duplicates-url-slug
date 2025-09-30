@@ -22,10 +22,16 @@ findBtn.addEventListener('click', async () => {
   }
   const duplicates = result.duplicates || [];
   if (duplicates.length === 0) {
-    resultDiv.innerHTML = '<p>No duplicate slug matches found.</p>';
+    resultDiv.innerHTML = '<p>There are no duplicate slug matches.</p>';
   } else {
-    resultDiv.innerHTML = '<h2>Duplicate slugs:</h2>' +
-      duplicates.map((d: any) => `<div><b>${d.slug}</b>:<ul>${d.items.map((i: string) => `<li>${i}</li>`).join('')}</ul></div>`).join('');
+    resultDiv.innerHTML = '<h2>Duplicate slugs found:</h2>' +
+      duplicates.map((d: any) => `
+        <div style="margin-bottom:1.5em;">
+          <div><b>Slug:</b> <span style="color:#0078d4">${d.slug}</span></div>
+          <div><b>Pages with this slug:</b></div>
+          <ul>${d.items.map((i: string) => `<li>${i}</li>`).join('')}</ul>
+        </div>
+      `).join('');
   }
 });
 
