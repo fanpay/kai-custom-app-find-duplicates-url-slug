@@ -63,38 +63,76 @@ export function addStyles(): void {
       color: white;
     }
 
+    .button-search {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      font-weight: 600;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .button-search:hover {
+      background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+      transform: translateY(-1px);
+    }
+
+    /* Search section styles */
+    .search-section {
+      margin: 20px 0;
+      padding: 20px;
+      background: linear-gradient(145deg, #f8fafc 0%, #e2e8f0 100%);
+      border-radius: 12px;
+      border: 1px solid #cbd5e0;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    .search-input-group {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
     /* Slug search input styles */
     .slug-input {
-      display: none; /* hidden by default; shown when clicking Search Slug */
-      min-width: 260px;
-      padding: 10px 12px;
-      border: 1px solid #cbd5e0;
-      border-radius: 6px;
-      font-size: 14px;
+      min-width: 300px;
+      padding: 12px 16px;
+      border: 2px solid #cbd5e0;
+      border-radius: 8px;
+      font-size: 16px;
       outline: none;
-      transition: border-color 0.2s, box-shadow 0.2s;
+      transition: all 0.3s ease;
       background: #fff;
       color: #1a202c;
+      box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
     }
 
     .slug-input::placeholder {
       color: #a0aec0;
+      font-style: italic;
     }
 
     .slug-input:focus {
-      border-color: #63b3ed;
-      box-shadow: 0 0 0 3px rgba(99, 179, 237, 0.35);
+      border-color: #667eea;
+      box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.25), inset 0 1px 3px rgba(0,0,0,0.1);
+      transform: translateY(-1px);
     }
 
-    /* Optional: make input and button feel like a connected group on wide screens */
-    @media (min-width: 640px) {
-      .slug-input + #search-btn {
-        border-top-left-radius: 0;
-        border-bottom-left-radius: 0;
+    @media (max-width: 640px) {
+      .search-input-group {
+        flex-direction: column;
+        gap: 16px;
       }
+      
       .slug-input {
-        border-top-right-radius: 0;
-        border-bottom-right-radius: 0;
+        min-width: 100%;
+        width: 100%;
+      }
+      
+      .button-search {
+        width: 100%;
+        padding: 12px 16px;
       }
     }
     
@@ -182,9 +220,15 @@ export function createMainUI(): string {
       
       <div class="button-group">
         <button id="config-btn" class="button button-primary">Show Config</button>
-          <input id="slug-input" type="text" placeholder="Enter slug to search" class="slug-input" />
-          <button id="search-btn" class="button button-warning">Search Slug</button>
+        <button id="search-btn" class="button button-warning">Search Slug</button>
         <button id="find-btn" class="button button-success">Find All Duplicates</button>
+      </div>
+      
+      <div id="search-section" class="search-section" style="display: none;">
+        <div class="search-input-group">
+          <input id="slug-input" type="text" placeholder="Enter slug to search..." class="slug-input" />
+          <button id="execute-search-btn" class="button button-search">🔍 Execute Search</button>
+        </div>
       </div>
       
       <div id="result" class="result-container"></div>

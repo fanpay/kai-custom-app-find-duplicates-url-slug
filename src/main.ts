@@ -25,7 +25,9 @@ let resultDiv: HTMLElement;
 let configBtn: HTMLElement;
 let slugInput: HTMLInputElement;
 let searchBtn: HTMLElement;
+let executeSearchBtn: HTMLElement;
 let findBtn: HTMLElement;
+let searchSection: HTMLElement;
 
 // =====================================================================
 // Application Initialization
@@ -56,12 +58,9 @@ function setupUI(): void {
   configBtn = document.getElementById('config-btn')!;
   slugInput = document.getElementById('slug-input') as HTMLInputElement;
   searchBtn = document.getElementById('search-btn')!;
+  executeSearchBtn = document.getElementById('execute-search-btn')!;
   findBtn = document.getElementById('find-btn')!;
-
-  // Ensure input starts hidden (CSS sets it, but enforce here too in case of SSR or overrides)
-  if (slugInput) {
-    slugInput.style.display = 'none';
-  }
+  searchSection = document.getElementById('search-section')!;
 }
 
 /**
@@ -70,16 +69,22 @@ function setupUI(): void {
 function setupEventListeners(): void {
   configBtn.addEventListener('click', handleConfigClick);
 
-  // When clicking Search Slug, reveal input if hidden; if visible and empty, focus it; otherwise run search
+  // When clicking Search Slug, show/hide the search section
   searchBtn.addEventListener('click', () => {
-    const isHidden = slugInput.style.display === 'none' || getComputedStyle(slugInput).display === 'none';
+    const isHidden = searchSection.style.display === 'none';
     if (isHidden) {
-      slugInput.style.display = 'inline-block';
+      searchSection.style.display = 'block';
       slugInput.focus();
-      return;
+      // Clear any previous results to show the search interface clearly
+      resultDiv.innerHTML = '<p style="color: #666; font-style: italic;">Enter a slug above and click "Execute Search" to find matching pages.</p>';
+    } else {
+      searchSection.style.display = 'none';
+      resultDiv.innerHTML = '';
     }
-    handleSlugSearchClick();
   });
+
+  // Execute search when clicking the execute button
+  executeSearchBtn.addEventListener('click', handleSlugSearchClick);
 
   // Allow Enter key inside input
   slugInput.addEventListener('keydown', (e: KeyboardEvent) => {
@@ -87,6 +92,7 @@ function setupEventListeners(): void {
       handleSlugSearchClick();
     }
   });
+  
   findBtn.addEventListener('click', handleFindDuplicatesClick);
 }
 
