@@ -49,7 +49,7 @@ export async function searchSpecificSlug(targetSlug: string): Promise<ApiResult>
       ...(results.managementApi?.items || [])
     ];
     
-    // Remove duplicates based on codename
+    // Remove duplicates based on codename+language combination to preserve multilingual variants
     const uniqueItems = removeDuplicateItems(allItems);
     
     return {
@@ -144,7 +144,7 @@ async function fetchAllPageItemsForDuplicateCheck(headers: Record<string, string
     console.log(`Request ${totalRequests}: Found ${newItems.length} page items with slugs, total: ${items.length}`);
     
     // Update pagination
-    if (data.pagination && data.pagination.next_page) {
+    if (data.pagination?.next_page) {
       skip += pageSize;
       console.log(`More pages available, next skip: ${skip}`);
     } else {

@@ -105,6 +105,9 @@ function setupEventListeners(): void {
  */
 async function handleConfigClick(): Promise<void> {
   try {
+    // Hide search section when showing config
+    searchSection.style.display = 'none';
+    
     resultDiv.innerHTML = 'Loading configuration...';
     await initializeConfig();
     resultDiv.innerHTML = renderConfiguration();
@@ -139,6 +142,9 @@ async function handleSlugSearchClick(): Promise<void> {
  */
 async function handleFindDuplicatesClick(): Promise<void> {
   try {
+    // Hide search section when finding duplicates
+    searchSection.style.display = 'none';
+    
     resultDiv.innerHTML = 'Searching for duplicate slugs...';
     await initializeConfig();
     

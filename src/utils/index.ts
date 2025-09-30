@@ -21,11 +21,11 @@ export function formatItem(item: any): ContentItem {
 }
 
 /**
- * Remove duplicate items based on codename
+ * Remove duplicate items based on codename+language combination to preserve multilingual variants
  */
 export function removeDuplicateItems(items: ContentItem[]): ContentItem[] {
   return items.filter((item, index, self) => 
-    index === self.findIndex(i => i.codename === item.codename)
+    index === self.findIndex(i => i.codename === item.codename && i.language === item.language)
   );
 }
 
@@ -131,7 +131,7 @@ export function filterPageItemsWithSlugs(items: any[]): any[] {
  */
 export function findSimilarSlugs(allSlugs: string[], searchTerm: string): string[] {
   return allSlugs.filter(slug => 
-    slug && slug.toLowerCase().includes(searchTerm.toLowerCase())
+    slug?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 }
 
