@@ -1,9 +1,9 @@
 import './style.css';
-import { getCustomAppContext } from '@kontent-ai/custom-app-sdk';
+import { getCustomAppContext, CustomAppContext } from '@kontent-ai/custom-app-sdk';
 
 // Global configuration object
 let appConfig = {
-  projectId: '',
+  environmentId: '',
   deliveryApiKey: '',
   managementApiKey: ''
 };
@@ -31,8 +31,15 @@ const findBtn = document.getElementById('find-btn')!;
 contextBtn.addEventListener('click', async () => {
   resultDiv.innerHTML = 'Loading custom app context...';
   try {
-    const ctx = await getCustomAppContext();
+    const ctx: CustomAppContext = await getCustomAppContext();
     console.log('getCustomAppContext result:', ctx);
+
+    if (ctx.isError) {
+      console.error({ errorCode: ctx.code, description: ctx.description});
+    } else {
+      console.log({ config: ctx.config, context: ctx.context });
+    }
+
     resultDiv.innerHTML = renderContextInfo(ctx);
   } catch (err: any) {
     resultDiv.innerHTML = `<p style="color:red; background:#ffe6e6; padding:10px; border-radius:4px;"><strong>Error:</strong> ${err?.message || err}</p>`;
@@ -93,7 +100,7 @@ findBtn.addEventListener('click', async () => {
 // Initialize configuration from environment and Kontent.ai context
 async function initializeConfig() {
   // Get environment variables
-  appConfig.projectId = (import.meta as any).env?.VITE_KONTENT_PROJECT_ID || process.env.KONTENT_PROJECT_ID || '';
+  appConfig.environmentId = (import.meta as any).env?.VITE_KONTENT_PROJECT_ID || process.env.KONTENT_PROJECT_ID || '';
   appConfig.deliveryApiKey = (import.meta as any).env?.VITE_KONTENT_API_KEY || process.env.KONTENT_API_KEY || '';
   appConfig.managementApiKey = (import.meta as any).env?.VITE_KONTENT_MANAGEMENT_API_KEY || process.env.KONTENT_MANAGEMENT_API_KEY || '';
 
@@ -102,15 +109,15 @@ async function initializeConfig() {
     const ctx = await getCustomAppContext();
     console.log('Custom App Context:', ctx);
     if (!ctx.isError && ctx.context?.environmentId) {
-      appConfig.projectId = ctx.context.environmentId;
-      console.log('Using project ID from Kontent.ai context:', appConfig.projectId);
+      appConfig.environmentId = ctx.context.environmentId;
+      console.log('Using environment ID from Kontent.ai context:', appConfig.environmentId);
     }
   } catch (error) {
     console.log('Could not get Custom App context:', error);
   }
 
   console.log('Final configuration:', {
-    projectId: appConfig.projectId || 'NOT SET',
+    environmentId: appConfig.environmentId || 'NOT SET',
     deliveryApiKey: appConfig.deliveryApiKey ? '***PRESENT***' : 'NOT SET',
     managementApiKey: appConfig.managementApiKey ? '***PRESENT***' : 'NOT SET'
   });
@@ -123,9 +130,9 @@ function displayConfiguration() {
       <h2 style="color: #495057; margin-top: 0;">Current Configuration</h2>
       
       <div style="margin-bottom: 15px;">
-        <strong>Environment/Project ID:</strong>
+        <strong>Environment ID:</strong>
         <div style="background: #e9ecef; padding: 10px; border-radius: 4px; font-family: monospace; margin-top: 5px;">
-          ${appConfig.projectId || '<span style="color: red;">NOT SET</span>'}
+          ${appConfig.environmentId || '<span style="color: red;">NOT SET</span>'}
         </div>
       </div>
       
@@ -152,8 +159,8 @@ function displayConfiguration() {
 
 // Search for items with specific slug using multiple API approaches
 async function searchSpecificSlug(targetSlug: string) {
-  if (!appConfig.projectId) {
-    return { error: 'Missing Kontent.ai Project ID configuration. Click "Show Config" to verify settings.' };
+  if (!appConfig.environmentId) {
+    return { error: 'Missing Kontent.ai Environment ID configuration. Click "Show Config" to verify settings.' };
   }
 
   try {
@@ -249,7 +256,7 @@ async function searchWithDeliveryApi(targetSlug: string) {
     ];
     
     for (const config of searchConfigs) {
-      const url = `https://deliver.kontent.ai/${appConfig.projectId}/items?${config.params.toString()}`;
+      const url = `https://deliver.kontent.ai/${appConfig.environmentId}/items?${config.params.toString()}`;
       console.log(`Trying URL (${config.field} field):`, url);
       
       const res = await fetch(url, { headers });
@@ -328,7 +335,7 @@ async function searchAllItemsDeliveryApi(targetSlug: string) {
     while (more) {
       totalRequests++;
       // Request both possible slug fields
-      const url = `https://deliver.kontent.ai/${appConfig.projectId}/items?system.type=page&elements=url_slug,slug,system&limit=${pageSize}&skip=${skip}`;
+      const url = `https://deliver.kontent.ai/${appConfig.environmentId}/items?system.type=page&elements=url_slug,slug,system&limit=${pageSize}&skip=${skip}`;
       console.log(`Request ${totalRequests}: ${url}`);
       
       const res = await fetch(url, { headers });
@@ -452,7 +459,7 @@ async function searchWithManagementApi(targetSlug: string) {
       'Content-Type': 'application/json'
     };
     
-    const url = `https://manage.kontent.ai/v2/projects/${appConfig.projectId}/items`;
+    const url = `https://manage.kontent.ai/v2/projects/${appConfig.environmentId}/items`;
     console.log('Management API URL:', url);
     
     const res = await fetch(url, { headers });
@@ -575,8 +582,8 @@ function displaySearchResults(result: any, targetSlug: string) {
 
 // Find duplicate slugs with improved pagination
 async function findDuplicateSlugs() {
-  if (!appConfig.projectId) {
-    return { error: 'Missing Kontent.ai Project ID configuration. Click "Show Config" to verify settings.' };
+  if (!appConfig.environmentId) {
+    return { error: 'Missing Kontent.ai Environment ID configuration. Click "Show Config" to verify settings.' };
   }
 
   try {
@@ -595,7 +602,7 @@ async function findDuplicateSlugs() {
     // Fetch ALL page items with proper pagination
     while (more) {
       totalRequests++;
-      const url = `https://deliver.kontent.ai/${appConfig.projectId}/items?system.type=page&elements=url_slug,slug,system&limit=${pageSize}&skip=${skip}`;
+      const url = `https://deliver.kontent.ai/${appConfig.environmentId}/items?system.type=page&elements=url_slug,slug,system&limit=${pageSize}&skip=${skip}`;
       console.log(`Duplicate search request ${totalRequests}: ${url}`);
       
       const res = await fetch(url, { headers });
