@@ -61,7 +61,7 @@ async function findDuplicateSlugs() {
     // Group by slug
     const slugMap = new Map();
     for (const item of items) {
-      const slug = item.elements.url_slug.value;
+        const slug = item.elements?.url_slug?.value;
       if (!slugMap.has(slug)) slugMap.set(slug, []);
       slugMap.get(slug).push(item.system.name);
     }
