@@ -2,7 +2,7 @@
  * Kontent.ai API service for content item operations
  */
 
-import { ApiResult, ContentItem, PaginationInfo } from '../types';
+import { ApiResult, PaginationInfo } from '../types';
 import { appConfig, isConfigValid } from '../config';
 import { 
   createApiHeaders, 
@@ -173,7 +173,7 @@ async function fetchAllPageItems(headers: Record<string, string>): Promise<any[]
     console.log(`Raw items in this batch: ${data.items?.length || 0}`);
     
     // Update pagination
-    if (data.pagination && data.pagination.next_page) {
+    if (data.pagination?.next_page) {
       pagination.skip += pagination.pageSize;
       console.log(`More items available, next skip: ${pagination.skip}`);
     } else {

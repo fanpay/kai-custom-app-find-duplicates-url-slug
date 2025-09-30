@@ -57,6 +57,11 @@ function setupUI(): void {
   slugInput = document.getElementById('slug-input') as HTMLInputElement;
   searchBtn = document.getElementById('search-btn')!;
   findBtn = document.getElementById('find-btn')!;
+
+  // Ensure input starts hidden (CSS sets it, but enforce here too in case of SSR or overrides)
+  if (slugInput) {
+    slugInput.style.display = 'none';
+  }
 }
 
 /**
@@ -64,7 +69,18 @@ function setupUI(): void {
  */
 function setupEventListeners(): void {
   configBtn.addEventListener('click', handleConfigClick);
-  searchBtn.addEventListener('click', handleSlugSearchClick);
+
+  // When clicking Search Slug, reveal input if hidden; if visible and empty, focus it; otherwise run search
+  searchBtn.addEventListener('click', () => {
+    const isHidden = slugInput.style.display === 'none' || getComputedStyle(slugInput).display === 'none';
+    if (isHidden) {
+      slugInput.style.display = 'inline-block';
+      slugInput.focus();
+      return;
+    }
+    handleSlugSearchClick();
+  });
+
   // Allow Enter key inside input
   slugInput.addEventListener('keydown', (e: KeyboardEvent) => {
     if (e.key === 'Enter') {

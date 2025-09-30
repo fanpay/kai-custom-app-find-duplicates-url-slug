@@ -27,6 +27,8 @@ export function addStyles(): void {
       display: flex;
       gap: 12px;
       margin-bottom: 24px;
+      align-items: center;
+      flex-wrap: wrap;
     }
     
     .button {
@@ -35,11 +37,15 @@ export function addStyles(): void {
       border-radius: 6px;
       font-weight: 600;
       cursor: pointer;
-      transition: opacity 0.2s;
+      transition: opacity 0.2s, box-shadow 0.2s, transform 0.02s;
     }
     
     .button:hover {
-      opacity: 0.9;
+      opacity: 0.95;
+    }
+
+    .button:active {
+      transform: translateY(1px);
     }
     
     .button-primary {
@@ -55,6 +61,41 @@ export function addStyles(): void {
     .button-success {
       background-color: #38a169;
       color: white;
+    }
+
+    /* Slug search input styles */
+    .slug-input {
+      display: none; /* hidden by default; shown when clicking Search Slug */
+      min-width: 260px;
+      padding: 10px 12px;
+      border: 1px solid #cbd5e0;
+      border-radius: 6px;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      background: #fff;
+      color: #1a202c;
+    }
+
+    .slug-input::placeholder {
+      color: #a0aec0;
+    }
+
+    .slug-input:focus {
+      border-color: #63b3ed;
+      box-shadow: 0 0 0 3px rgba(99, 179, 237, 0.35);
+    }
+
+    /* Optional: make input and button feel like a connected group on wide screens */
+    @media (min-width: 640px) {
+      .slug-input + #search-btn {
+        border-top-left-radius: 0;
+        border-bottom-left-radius: 0;
+      }
+      .slug-input {
+        border-top-right-radius: 0;
+        border-bottom-right-radius: 0;
+      }
     }
     
     .result-container {
