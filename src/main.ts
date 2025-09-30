@@ -9,20 +9,31 @@ if (app) {
   `;
 }
 
-getCustomAppContext().then(response => {
-  const ctxDiv = document.getElementById('ctx');
-  if (!ctxDiv) return;
-  if (response.isError) {
-    ctxDiv.innerHTML = `<p style='color:red'>Error: ${response.description}</p>`;
-  } else {
-    ctxDiv.innerHTML = `
-      <strong>Contexto:</strong>
-      <pre>${JSON.stringify(response.context, null, 2)}</pre>
-      <strong>Config:</strong>
-      <pre>${JSON.stringify(response.config, null, 2)}</pre>
-    `;
+
+const ctxDiv = document.getElementById('ctx');
+try {
+  getCustomAppContext().then(response => {
+    if (!ctxDiv) return;
+    if (response.isError) {
+      ctxDiv.innerHTML = `<p style='color:red'>Error: ${response.description}</p>`;
+    } else {
+      ctxDiv.innerHTML = `
+        <strong>Contexto:</strong>
+        <pre>${JSON.stringify(response.context, null, 2)}</pre>
+        <strong>Config:</strong>
+        <pre>${JSON.stringify(response.config, null, 2)}</pre>
+      `;
+    }
+  }).catch(err => {
+    if (ctxDiv) {
+      ctxDiv.innerHTML = `<p style='color:orange'>Esta app no está embebida en Kontent.ai.<br>Mensaje: ${err?.message || err}</p>`;
+    }
+  });
+} catch (err) {
+  if (ctxDiv) {
+    ctxDiv.innerHTML = `<p style='color:orange'>Esta app no está embebida en Kontent.ai.<br>Mensaje: ${(err as any)?.message || err}</p>`;
   }
-});
+}
 
 // Puedes agregar aquí tu lógica de negocio después de obtener el contexto
 
