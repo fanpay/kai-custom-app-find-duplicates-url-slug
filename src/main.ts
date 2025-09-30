@@ -1,20 +1,30 @@
 import './style.css';
 import { getCustomAppContext } from '@kontent-ai/custom-app-sdk';
 
-// UI Elements
-
-// Renderizar mensaje visible para pruebas
 const app = document.getElementById('app');
 if (app) {
   app.innerHTML = `
-    <h1 style="color: green">¡La app se está ejecutando correctamente!</h1>
-    <p>Si ves este mensaje, la app y el DOM están funcionando.</p>
-    <!--
-    <button id="find-btn">Buscar duplicados</button>
-    <div id="result"></div>
-    -->
+    <h1 style="color: green">¡Hola desde mi custom app!</h1>
+    <div id="ctx">Cargando contexto de Kontent.ai...</div>
   `;
 }
+
+getCustomAppContext().then(response => {
+  const ctxDiv = document.getElementById('ctx');
+  if (!ctxDiv) return;
+  if (response.isError) {
+    ctxDiv.innerHTML = `<p style='color:red'>Error: ${response.description}</p>`;
+  } else {
+    ctxDiv.innerHTML = `
+      <strong>Contexto:</strong>
+      <pre>${JSON.stringify(response.context, null, 2)}</pre>
+      <strong>Config:</strong>
+      <pre>${JSON.stringify(response.config, null, 2)}</pre>
+    `;
+  }
+});
+
+// Puedes agregar aquí tu lógica de negocio después de obtener el contexto
 
 // --- Lógica real comentada para pruebas ---
 /*
