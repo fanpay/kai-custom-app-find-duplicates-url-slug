@@ -2,13 +2,22 @@ import './style.css';
 import { getCustomAppContext } from '@kontent-ai/custom-app-sdk';
 
 // UI Elements
-const app = document.getElementById('app')!;
-app.innerHTML = `
-  <h1>Buscar slugs duplicados</h1>
-  <button id="find-btn">Buscar duplicados</button>
-  <div id="result"></div>
-`;
 
+// Renderizar mensaje visible para pruebas
+const app = document.getElementById('app');
+if (app) {
+  app.innerHTML = `
+    <h1 style="color: green">¡La app se está ejecutando correctamente!</h1>
+    <p>Si ves este mensaje, la app y el DOM están funcionando.</p>
+    <!--
+    <button id="find-btn">Buscar duplicados</button>
+    <div id="result"></div>
+    -->
+  `;
+}
+
+// --- Lógica real comentada para pruebas ---
+/*
 const resultDiv = document.getElementById('result')!;
 const findBtn = document.getElementById('find-btn')!;
 
@@ -27,8 +36,10 @@ findBtn.addEventListener('click', async () => {
       duplicates.map((d: any) => `<div><b>${d.slug}</b>:<ul>${d.items.map((i: string) => `<li>${i}</li>`).join('')}</ul></div>`).join('');
   }
 });
+*/
 
-// Lógica para buscar duplicados
+// Lógica para buscar duplicados (comentada para pruebas)
+/*
 async function findDuplicateSlugs() {
   // If using Vite, ensure vite-env.d.ts exists and import.meta.env is typed. Otherwise, use process.env only.
   const projectId = (import.meta as any).env?.VITE_KONTENT_PROJECT_ID || process.env.KONTENT_PROJECT_ID;
@@ -66,13 +77,14 @@ async function findDuplicateSlugs() {
     return { error: 'Error inesperado: ' + (err?.message || err) };
   }
 }
+*/
 
 // Inicializar el custom app (opcional, para integración con Kontent)
-getCustomAppContext().then((response) => {
-  if (response.isError) {
-    console.error({ errorCode: response.code, description: response.description });
-  } else {
-    // Puedes usar response.config y response.context si lo necesitas
-    // console.log({ config: response.config, context: response.context });
-  }
-});
+// getCustomAppContext().then((response) => {
+//   if (response.isError) {
+//     console.error({ errorCode: response.code, description: response.description });
+//   } else {
+//     // Puedes usar response.config y response.context si lo necesitas
+//     // console.log({ config: response.config, context: response.context });
+//   }
+// });
