@@ -14,6 +14,7 @@ if (app) {
     <h1 style="color: green">Find Duplicate Slugs - Debug Version</h1>
     <div style="margin-bottom: 20px;">
       <button id="config-btn" style="background-color: #007ACC; color: white; border: none; padding: 8px 16px; border-radius: 4px; margin-right: 10px;">Show Config</button>
+      <button id="context-btn" style="background-color: #6f42c1; color: white; border: none; padding: 8px 16px; border-radius: 4px; margin-right: 10px;">Show Context</button>
       <button id="test-btn" style="background-color: #f0ad4e; color: white; border: none; padding: 8px 16px; border-radius: 4px; margin-right: 10px;">Test: meli-qa-page-2</button>
       <button id="find-btn" style="background-color: #5cb85c; color: white; border: none; padding: 8px 16px; border-radius: 4px;">Find All Duplicates</button>
     </div>
@@ -23,8 +24,48 @@ if (app) {
 
 const resultDiv = document.getElementById('result')!;
 const configBtn = document.getElementById('config-btn')!;
+const contextBtn = document.getElementById('context-btn')!;
 const testBtn = document.getElementById('test-btn')!;
 const findBtn = document.getElementById('find-btn')!;
+// Show Custom App Context
+contextBtn.addEventListener('click', async () => {
+  resultDiv.innerHTML = 'Loading custom app context...';
+  try {
+    const ctx = await getCustomAppContext();
+    console.log('getCustomAppContext result:', ctx);
+    resultDiv.innerHTML = renderContextInfo(ctx);
+  } catch (err: any) {
+    resultDiv.innerHTML = `<p style="color:red; background:#ffe6e6; padding:10px; border-radius:4px;"><strong>Error:</strong> ${err?.message || err}</p>`;
+  }
+});
+
+// Render context info as HTML
+function renderContextInfo(ctx: any) {
+  return `
+    <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; border: 1px solid #dee2e6;">
+      <h2 style="color: #495057; margin-top: 0;">Custom App Context</h2>
+      <div><strong>isError:</strong> <span style="color:${ctx.isError ? 'red' : 'green'}; font-weight:bold;">${ctx.isError ? 'true' : 'false'}</span></div>
+      <div><strong>code:</strong> <span style="font-family:monospace;">${ctx.code ?? '<i>null</i>'}</span></div>
+      <div><strong>description:</strong> <span>${ctx.description ?? '<i>null</i>'}</span></div>
+      <div style="margin-top:10px;"><strong>context:</strong> ${ctx.context ? renderObject(ctx.context) : '<i>null</i>'}</div>
+      <div style="margin-top:10px;"><strong>config:</strong> ${ctx.config ? renderObject(ctx.config) : '<i>null</i>'}</div>
+      <div style="margin-top:20px; font-size:12px; color:#666;">Check browser console for full object details.</div>
+    </div>
+  `;
+}
+
+// Helper to render nested objects as HTML
+function renderObject(obj: any): string {
+  if (!obj || typeof obj !== 'object') return String(obj);
+  return `<pre style="background:#e9ecef; padding:10px; border-radius:4px; font-size:13px;">${escapeHtml(JSON.stringify(obj, null, 2))}</pre>`;
+}
+
+// Escape HTML for safe rendering
+function escapeHtml(str: string) {
+  return str.replace(/[&<>"']/g, function (c) {
+    return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'} as any)[c] || c;
+  });
+}
 
 // Initialize configuration on load
 initializeConfig();
@@ -152,44 +193,107 @@ async function searchSpecificSlug(targetSlug: string) {
   }
 }
 
-// Search using Delivery API with direct filtering
+// Search using Delivery API with direct filtering - FIXED based on working script
 async function searchWithDeliveryApi(targetSlug: string) {
   try {
-    console.log('\n--- Delivery API Direct Search ---');
-    const headers: Record<string, string> = {};
+    console.log('\n--- Delivery API Direct Search (Fixed) ---');
+    const headers: Record<string, string> = {
+      'Accept': 'application/json',
+      'Content-Type': 'application/json'
+    };
+    
     if (appConfig.deliveryApiKey) {
       headers['Authorization'] = `Bearer ${appConfig.deliveryApiKey}`;
     }
     
-    // Try different URL parameter approaches
-    const searchUrls = [
-      `https://deliver.kontent.ai/${appConfig.projectId}/items?system.type=page&elements.url_slug=${encodeURIComponent(targetSlug)}`,
-      `https://deliver.kontent.ai/${appConfig.projectId}/items?system.type=page&elements.url_slug[eq]=${encodeURIComponent(targetSlug)}`,
-      `https://deliver.kontent.ai/${appConfig.projectId}/items?elements.url_slug=${encodeURIComponent(targetSlug)}`
+    // Based on working script - try different element field names
+    const searchConfigs = [
+      // Try 'slug' field (like working script)
+      {
+        params: new URLSearchParams({
+          'system.type': 'page',
+          'elements.slug': targetSlug,
+          'depth': '0',
+          'limit': '100'
+        }),
+        field: 'slug'
+      },
+      // Try 'url_slug' field
+      {
+        params: new URLSearchParams({
+          'system.type': 'page',
+          'elements.url_slug': targetSlug,
+          'depth': '0',
+          'limit': '100'
+        }),
+        field: 'url_slug'
+      },
+      // Try without system.type filter
+      {
+        params: new URLSearchParams({
+          'elements.slug': targetSlug,
+          'depth': '0',
+          'limit': '100'
+        }),
+        field: 'slug'
+      },
+      // Try without system.type filter for url_slug
+      {
+        params: new URLSearchParams({
+          'elements.url_slug': targetSlug,
+          'depth': '0',
+          'limit': '100'
+        }),
+        field: 'url_slug'
+      }
     ];
     
-    for (const url of searchUrls) {
-      console.log('Trying URL:', url);
+    for (const config of searchConfigs) {
+      const url = `https://deliver.kontent.ai/${appConfig.projectId}/items?${config.params.toString()}`;
+      console.log(`Trying URL (${config.field} field):`, url);
+      
       const res = await fetch(url, { headers });
-      console.log('Response status:', res.status);
+      console.log(`Response status for ${config.field} field:`, res.status);
       
       if (res.ok) {
         const data = await res.json();
-        console.log('Response data:', data);
+        console.log(`Response data for ${config.field}:`, {
+          itemCount: data.items?.length || 0,
+          pagination: data.pagination
+        });
         
-        const items = (data.items || []).filter(
-          (item: any) => item.system?.type === 'page' && 
-                        item.elements?.url_slug?.value === targetSlug
-        );
+        // Filter items more flexibly
+        const items = (data.items || []).filter((item: any) => {
+          const hasMatchingSlug = 
+            item.elements?.slug?.value === targetSlug || 
+            item.elements?.url_slug?.value === targetSlug;
+          const isPageType = item.system?.type === 'page';
+          
+          console.log(`Item ${item.system?.codename}:`, {
+            type: item.system?.type,
+            slug: item.elements?.slug?.value,
+            url_slug: item.elements?.url_slug?.value,
+            matchesSlug: hasMatchingSlug,
+            isPage: isPageType
+          });
+          
+          return hasMatchingSlug && isPageType;
+        });
         
         if (items.length > 0) {
+          console.log(`✅ Found ${items.length} items using ${config.field} field`);
           return {
             success: true,
             items: items.map(formatItem),
             method: 'delivery-api-direct',
+            field: config.field,
             url
           };
+        } else {
+          console.log(`No matching items found using ${config.field} field`);
         }
+      } else {
+        console.log(`❌ Failed with ${config.field} field:`, res.status, res.statusText);
       }
     }
     
@@ -223,7 +327,8 @@ async function searchAllItemsDeliveryApi(targetSlug: string) {
     // Remove safety limit - fetch ALL items with proper pagination
     while (more) {
       totalRequests++;
-      const url = `https://deliver.kontent.ai/${appConfig.projectId}/items?system.type=page&elements=url_slug,system&limit=${pageSize}&skip=${skip}`;
+      // Request both possible slug fields
+      const url = `https://deliver.kontent.ai/${appConfig.projectId}/items?system.type=page&elements=url_slug,slug,system&limit=${pageSize}&skip=${skip}`;
       console.log(`Request ${totalRequests}: ${url}`);
       
       const res = await fetch(url, { headers });
@@ -235,7 +340,8 @@ async function searchAllItemsDeliveryApi(targetSlug: string) {
       console.log('Full API Response pagination:', data.pagination);
       
       const newItems = (data.items || []).filter(
-        (item: any) => item.system?.type === 'page' && item.elements?.url_slug?.value
+        (item: any) => item.system?.type === 'page' && 
+                      (item.elements?.url_slug?.value || item.elements?.slug?.value)
       );
       
       allItems = allItems.concat(newItems);
@@ -262,10 +368,20 @@ async function searchAllItemsDeliveryApi(targetSlug: string) {
     console.log(`Total API requests made: ${totalRequests}`);
     console.log(`Total page items with slugs: ${allItems.length}`);
     
-    // Get all unique slugs for debugging
-    const allSlugs = [...new Set(allItems.map(item => item.elements?.url_slug?.value).filter(Boolean))];
+    // Get all unique slugs for debugging - handle both field types
+    const allSlugs = [...new Set(
+      allItems.map(item => 
+        item.elements?.url_slug?.value || item.elements?.slug?.value
+      ).filter(Boolean)
+    )];
     console.log(`Total unique slugs: ${allSlugs.length}`);
     console.log('First 20 slugs:', allSlugs.slice(0, 20));
+    
+    // Debug: Show which field types we found
+    const urlSlugCount = allItems.filter(item => item.elements?.url_slug?.value).length;
+    const slugCount = allItems.filter(item => item.elements?.slug?.value).length;
+    console.log(`Items with url_slug field: ${urlSlugCount}`);
+    console.log(`Items with slug field: ${slugCount}`);
     
     // Look for the exact target slug
     const exactMatches = allSlugs.filter(slug => slug === targetSlug);
@@ -283,17 +399,22 @@ async function searchAllItemsDeliveryApi(targetSlug: string) {
     );
     console.log('All slugs containing "meli":', meliSlugs);
     
-    // Find exact matches in items
+    // Find exact matches in items - check both field types
     const matchingItems = allItems.filter(
-      (item: any) => item.elements?.url_slug?.value === targetSlug
+      (item: any) => {
+        const slugValue = item.elements?.url_slug?.value || item.elements?.slug?.value;
+        return slugValue === targetSlug;
+      }
     );
     
     console.log(`Found ${matchingItems.length} items with exact slug "${targetSlug}"`);
     
     // Also find case-insensitive matches
     const caseInsensitiveMatches = allItems.filter(
-      (item: any) => item.elements?.url_slug?.value && 
-                    item.elements.url_slug.value.toLowerCase() === targetSlug.toLowerCase()
+      (item: any) => {
+        const slugValue = item.elements?.url_slug?.value || item.elements?.slug?.value;
+        return slugValue && slugValue.toLowerCase() === targetSlug.toLowerCase();
+      }
     );
     
     console.log(`Found ${caseInsensitiveMatches.length} items with case-insensitive slug match`);
@@ -360,14 +481,16 @@ async function searchWithManagementApi(targetSlug: string) {
   }
 }
 
-// Format item for consistent display
+// Format item for consistent display - handle both slug field types
 function formatItem(item: any) {
+  const slugValue = item.elements?.url_slug?.value || item.elements?.slug?.value || 'No slug';
   return {
     name: item.system?.name || 'Unknown',
     codename: item.system?.codename || 'Unknown',
     type: item.system?.type || 'Unknown',
     language: item.system?.language || 'Unknown',
-    slug: item.elements?.url_slug?.value || 'No slug'
+    slug: slugValue,
+    slugField: item.elements?.url_slug?.value ? 'url_slug' : 'slug'
   };
 }
 
@@ -472,7 +595,7 @@ async function findDuplicateSlugs() {
     // Fetch ALL page items with proper pagination
     while (more) {
       totalRequests++;
-      const url = `https://deliver.kontent.ai/${appConfig.projectId}/items?system.type=page&elements=url_slug,system&limit=${pageSize}&skip=${skip}`;
+      const url = `https://deliver.kontent.ai/${appConfig.projectId}/items?system.type=page&elements=url_slug,slug,system&limit=${pageSize}&skip=${skip}`;
       console.log(`Duplicate search request ${totalRequests}: ${url}`);
       
       const res = await fetch(url, { headers });
@@ -484,7 +607,8 @@ async function findDuplicateSlugs() {
       console.log('Pagination info:', data.pagination);
       
       const newItems = (data.items || []).filter(
-        (item: any) => item.system?.type === 'page' && item.elements?.url_slug?.value
+        (item: any) => item.system?.type === 'page' && 
+                      (item.elements?.url_slug?.value || item.elements?.slug?.value)
       );
       
       items = items.concat(newItems);
@@ -510,16 +634,19 @@ async function findDuplicateSlugs() {
     console.log(`Total requests made: ${totalRequests}`);
     console.log(`Total page items with slugs: ${items.length}`);
 
-    // Group by slug
+    // Group by slug - handle both field types
     const slugMap = new Map();
     for (const item of items) {
-      const slug = item.elements.url_slug.value;
-      if (!slugMap.has(slug)) slugMap.set(slug, []);
-      slugMap.get(slug).push({
-        name: item.system.name,
-        codename: item.system.codename,
-        language: item.system.language
-      });
+      const slug = item.elements?.url_slug?.value || item.elements?.slug?.value;
+      if (slug) {
+        if (!slugMap.has(slug)) slugMap.set(slug, []);
+        slugMap.get(slug).push({
+          name: item.system.name,
+          codename: item.system.codename,
+          language: item.system.language,
+          slugField: item.elements?.url_slug?.value ? 'url_slug' : 'slug'
+        });
+      }
     }
     
     // Filter duplicates
