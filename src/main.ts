@@ -45,8 +45,23 @@ testBtn.addEventListener('click', async () => {
     return;
   }
   const items = result.items || [];
+  const debug = result.debug;
+  
+  let debugInfo = '';
+  if (debug) {
+    debugInfo = `
+      <div style="background:#f5f5f5; padding:10px; margin:10px 0; border-radius:4px; font-size:12px;">
+        <h3>Debug Info:</h3>
+        <div>Total page items fetched: ${debug.totalItems}</div>
+        <div>Items matching "${debug.targetSlug}": ${debug.matchingItems}</div>
+        ${debug.similarSlugs.length > 0 ? `<div>Similar slugs containing 'meli': ${debug.similarSlugs.join(', ')}</div>` : '<div>No slugs containing "meli" found</div>'}
+        <div><small>Check browser console for more details</small></div>
+      </div>
+    `;
+  }
+  
   if (items.length === 0) {
-    resultDiv.innerHTML = '<p>No pages found with slug "meli-qa-page-2".</p>';
+    resultDiv.innerHTML = `<p>No pages found with slug "meli-qa-page-2".</p>${debugInfo}`;
   } else {
     resultDiv.innerHTML = `<h2>Pages found with slug "meli-qa-page-2" (${items.length} items):</h2>` +
       items.map((item: any) => `
@@ -57,7 +72,7 @@ testBtn.addEventListener('click', async () => {
           <div><b>Language:</b> ${item.language}</div>
           <div><b>Slug:</b> <span style="color:#0078d4">${item.slug}</span></div>
         </div>
-      `).join('');
+      `).join('') + debugInfo;
   }
 });
 
@@ -139,14 +154,15 @@ async function searchSpecificSlug(targetSlug: string) {
   }
 
   try {
-    let items: any[] = [];
+    let allItems: any[] = [];
     let skip = 0;
     const pageSize = 1000;
     let more = true;
+    let totalFetched = 0;
 
+    // Fetch ALL page items (same as original function but with debug info)
     while (more) {
-      // Search for content items with specific slug and type 'page'
-      const url = `https://deliver.kontent.ai/${projectId}/items?system.type=page&elements.url_slug=${encodeURIComponent(targetSlug)}&elements=url_slug&limit=${pageSize}&skip=${skip}`;
+      const url = `https://deliver.kontent.ai/${projectId}/items?system.type=page&elements=url_slug&limit=${pageSize}&skip=${skip}`;
       const res = await fetch(url, {
         headers: apiKey ? { 'Authorization': `Bearer ${apiKey}` } : {}
       });
@@ -155,11 +171,10 @@ async function searchSpecificSlug(targetSlug: string) {
       }
       const data = await res.json();
       const newItems = (data.items || []).filter(
-        (item: any) => item.system?.type === 'page' && 
-                      item.elements?.url_slug?.value &&
-                      item.elements.url_slug.value === targetSlug
+        (item: any) => item.system?.type === 'page' && item.elements?.url_slug?.value
       );
-      items = items.concat(newItems);
+      allItems = allItems.concat(newItems);
+      totalFetched += newItems.length;
       if (data.pagination?.next_page) {
         skip += pageSize;
       } else {
@@ -167,8 +182,26 @@ async function searchSpecificSlug(targetSlug: string) {
       }
     }
 
+    console.log(`Debug: Fetched ${totalFetched} total page items`);
+    
+    // Filter for the specific slug
+    const matchingItems = allItems.filter(
+      (item: any) => item.elements?.url_slug?.value === targetSlug
+    );
+
+    console.log(`Debug: Found ${matchingItems.length} items with slug "${targetSlug}"`);
+    
+    // Log all unique slugs for debugging
+    const allSlugs = [...new Set(allItems.map(item => item.elements?.url_slug?.value).filter(Boolean))];
+    console.log(`Debug: Total unique slugs found: ${allSlugs.length}`);
+    console.log(`Debug: First 10 slugs:`, allSlugs.slice(0, 10));
+    
+    // Check if the target slug exists in any form
+    const similarSlugs = allSlugs.filter(slug => slug && slug.includes('meli'));
+    console.log(`Debug: Slugs containing 'meli':`, similarSlugs);
+
     // Map items to more readable format
-    const formattedItems = items.map(item => ({
+    const formattedItems = matchingItems.map(item => ({
       name: item.system.name,
       codename: item.system.codename,
       type: item.system.type,
@@ -176,7 +209,15 @@ async function searchSpecificSlug(targetSlug: string) {
       slug: item.elements.url_slug.value
     }));
 
-    return { items: formattedItems };
+    return { 
+      items: formattedItems,
+      debug: {
+        totalItems: totalFetched,
+        matchingItems: matchingItems.length,
+        targetSlug,
+        similarSlugs
+      }
+    };
   } catch (err: any) {
     return { error: 'Unexpected error: ' + (err?.message || err) };
   }
