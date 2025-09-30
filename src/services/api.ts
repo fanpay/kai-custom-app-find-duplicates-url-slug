@@ -154,7 +154,7 @@ async function fetchAllPageItems(headers: Record<string, string>): Promise<any[]
 
   while (pagination.more) {
     pagination.totalRequests++;
-    const url = `${KONTENT_DELIVERY_API_BASE}/${appConfig.projectId}/items?system.type=page&elements=url_slug,slug,system&limit=${pagination.pageSize}&skip=${pagination.skip}`;
+    const url = `${KONTENT_DELIVERY_API_BASE}/${appConfig.projectId}/items?system.type=page&elements=url_slug,slug,system&limit=${pagination.pageSize}&skip=${pagination.skip}&system.language=*`;
     
     console.log(`Request ${pagination.totalRequests}: ${url}`);
     

@@ -31,7 +31,7 @@ export async function searchSpecificSlug(targetSlug: string): Promise<ApiResult>
   }
 
   try {
-    console.log(`\n=== SEARCHING FOR SLUG: "${targetSlug}" ===`);
+    console.log(`\n=== SEARCHING FOR SLUG: "${targetSlug}" (ALL LANGUAGES) ===`);
     
     // Try multiple API endpoints and approaches
     const results = {
@@ -83,7 +83,7 @@ export async function findDuplicateSlugs(): Promise<DuplicateResult> {
   }
 
   try {
-    console.log('\n=== FINDING DUPLICATE SLUGS ===');
+    console.log('\n=== FINDING DUPLICATE SLUGS (ALL LANGUAGES) ===');
     
     const headers = createApiHeaders(appConfig.deliveryApiKey);
     const allItems = await fetchAllPageItemsForDuplicateCheck(headers);
@@ -98,6 +98,10 @@ export async function findDuplicateSlugs(): Promise<DuplicateResult> {
     console.log(`Found ${duplicates.length} duplicate slugs`);
     duplicates.forEach(d => {
       console.log(`- "${d.slug}": ${d.items.length} items`);
+      // Special logging for lorem-ipsum and tutorial_mari_page debugging
+      if (d.slug === 'lorem-ipsum' || d.items.some((item: any) => item.codename === 'tutorial_mari_page')) {
+        console.log(`  🔍 DEBUG - ${d.slug} items:`, d.items.map((item: any) => `${item.codename}(${item.language})`).join(', '));
+      }
     });
 
     return { 
@@ -127,7 +131,7 @@ async function fetchAllPageItemsForDuplicateCheck(headers: Record<string, string
 
   while (more) {
     totalRequests++;
-    const url = `https://deliver.kontent.ai/${appConfig.projectId}/items?system.type=page&elements=url_slug,slug,system&limit=${pageSize}&skip=${skip}`;
+    const url = `https://deliver.kontent.ai/${appConfig.projectId}/items?system.type=page&elements=url_slug,slug,system&limit=${pageSize}&skip=${skip}&system.language=*`;
     console.log(`Duplicate search request ${totalRequests}: ${url}`);
     
     const res = await fetch(url, { headers });
@@ -141,7 +145,20 @@ async function fetchAllPageItemsForDuplicateCheck(headers: Record<string, string
     const newItems = filterPageItemsWithSlugs(data.items || []);
     items = items.concat(newItems);
     
+    // Log language statistics for this batch
+    const languagesInBatch = [...new Set(newItems.map((item: any) => item.system?.language).filter(Boolean))];
     console.log(`Request ${totalRequests}: Found ${newItems.length} page items with slugs, total: ${items.length}`);
+    console.log(`Languages in this batch: ${languagesInBatch.join(', ')}`);
+    
+    // Special check for tutorial_mari_page
+    const mariPages = newItems.filter((item: any) => item.system?.codename === 'tutorial_mari_page');
+    if (mariPages.length > 0) {
+      console.log(`🔍 Found tutorial_mari_page in batch ${totalRequests}:`, 
+        mariPages.map((item: any) => 
+          `${item.system.codename}(${item.system.language}) slug: ${item.elements?.url_slug?.value || item.elements?.slug?.value || 'none'}`
+        ).join(', ')
+      );
+    }
     
     // Update pagination
     if (data.pagination?.next_page) {
