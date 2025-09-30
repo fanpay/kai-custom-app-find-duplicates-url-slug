@@ -62,12 +62,14 @@ async function findDuplicateSlugs() {
       return { error: `Error fetching from API: ${res.status} ${res.statusText}` };
     }
     const data = await res.json();
-    const items = data.items || [];
+    const items = (data.items || []).filter(
+      (item: any) => item.system?.type === 'page' && item.elements?.url_slug?.value
+    );
 
     // Group by slug
     const slugMap = new Map();
     for (const item of items) {
-        const slug = item.elements?.url_slug?.value;
+      const slug = item.elements.url_slug.value;
       if (!slugMap.has(slug)) slugMap.set(slug, []);
       slugMap.get(slug).push(item.system.name);
     }
