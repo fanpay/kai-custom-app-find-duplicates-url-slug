@@ -141,7 +141,8 @@ export function createMainUI(): string {
       
       <div class="button-group">
         <button id="config-btn" class="button button-primary">Show Config</button>
-        <button id="test-btn" class="button button-warning">Test: meli-qa-page-2</button>
+          <input id="slug-input" type="text" placeholder="Enter slug to search" class="slug-input" />
+          <button id="search-btn" class="button button-warning">Search Slug</button>
         <button id="find-btn" class="button button-success">Find All Duplicates</button>
       </div>
       

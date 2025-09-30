@@ -29,6 +29,10 @@ src/
 
 To add new features, extend `main.ts` with new functions for configuration, API calls, business logic, or UI rendering as needed. Keep related logic grouped and well-commented.
 
+### New (Slug Search Input)
+
+The interface now includes a text input where you can type any slug and search for matching pages. Press Enter or click "Search Slug". This replaces the previous hardcoded test slug.
+
 ## 🔄 Migration to Modular Architecture
 
 If you wish to migrate to a modular architecture (as described in the previous version of this README), follow these steps:

@@ -23,7 +23,8 @@ import {
 // DOM Elements
 let resultDiv: HTMLElement;
 let configBtn: HTMLElement;
-let testBtn: HTMLElement;
+let slugInput: HTMLInputElement;
+let searchBtn: HTMLElement;
 let findBtn: HTMLElement;
 
 // =====================================================================
@@ -53,7 +54,8 @@ function setupUI(): void {
   // Get references to DOM elements
   resultDiv = document.getElementById('result')!;
   configBtn = document.getElementById('config-btn')!;
-  testBtn = document.getElementById('test-btn')!;
+  slugInput = document.getElementById('slug-input') as HTMLInputElement;
+  searchBtn = document.getElementById('search-btn')!;
   findBtn = document.getElementById('find-btn')!;
 }
 
@@ -62,7 +64,13 @@ function setupUI(): void {
  */
 function setupEventListeners(): void {
   configBtn.addEventListener('click', handleConfigClick);
-  testBtn.addEventListener('click', handleTestClick);
+  searchBtn.addEventListener('click', handleSlugSearchClick);
+  // Allow Enter key inside input
+  slugInput.addEventListener('keydown', (e: KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSlugSearchClick();
+    }
+  });
   findBtn.addEventListener('click', handleFindDuplicatesClick);
 }
 
@@ -87,16 +95,20 @@ async function handleConfigClick(): Promise<void> {
 /**
  * Handle test button click
  */
-async function handleTestClick(): Promise<void> {
+async function handleSlugSearchClick(): Promise<void> {
+  const value = slugInput.value.trim();
+  if (!value) {
+    resultDiv.innerHTML = '<p style="color:#b45309;">Please enter a slug to search.</p>';
+    return;
+  }
   try {
-    resultDiv.innerHTML = 'Searching for specific slug: meli-qa-page-2...';
+    resultDiv.innerHTML = `Searching for slug: <code>${value}</code> ...`;
     await initializeConfig();
-    
-    const result = await searchSpecificSlug('meli-qa-page-2');
-    resultDiv.innerHTML = renderSearchResults(result, 'meli-qa-page-2');
+    const result = await searchSpecificSlug(value);
+    resultDiv.innerHTML = renderSearchResults(result, value);
   } catch (error) {
-    console.error('Error during search:', error);
-    resultDiv.innerHTML = `<p style="color:red;">Error during search: ${error}</p>`;
+    console.error('Error during slug search:', error);
+    resultDiv.innerHTML = `<p style="color:red;">Error during slug search: ${error}</p>`;
   }
 }
 
