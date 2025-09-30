@@ -665,21 +665,24 @@ function renderDuplicateCards(duplicates: any[]): string {
         
         <div class="duplicate-languages">
           ${Object.entries(itemsByLanguage)
-            .sort(([a], [b]) => (a as string).localeCompare(b as string))
-            .map(([language, langItems]: [string, any[]]) => `
-              <div class="language-section">
-                <h5 class="language-title">🌐 ${language} (${langItems.length} item${langItems.length > 1 ? 's' : ''})</h5>
-                <ul class="items-list">
-                  ${langItems.map((item: any) => `
-                    <li class="duplicate-item">
-                      <div class="item-name">${item.name || item}</div>
-                      ${item.codename ? `<div class="item-meta">Codename: <code>${item.codename}</code></div>` : ''}
-                      ${item.slugField ? `<div class="item-meta">Field: <span class="field-type">${item.slugField}</span></div>` : ''}
-                    </li>
-                  `).join('')}
-                </ul>
-              </div>
-            `).join('')}
+            .sort(([a], [b]) => a.localeCompare(b))
+            .map(([language, langItems]) => {
+              const itemsArray = langItems as any[];
+              return `
+                <div class="language-section">
+                  <h5 class="language-title">🌐 ${language} (${itemsArray.length} item${itemsArray.length > 1 ? 's' : ''})</h5>
+                  <ul class="items-list">
+                    ${itemsArray.map((item: any) => `
+                      <li class="duplicate-item">
+                        <div class="item-name">${item.name || item}</div>
+                        ${item.codename ? `<div class="item-meta">Codename: <code>${item.codename}</code></div>` : ''}
+                        ${item.slugField ? `<div class="item-meta">Field: <span class="field-type">${item.slugField}</span></div>` : ''}
+                      </li>
+                    `).join('')}
+                  </ul>
+                </div>
+              `;
+            }).join('')}
         </div>
       </div>
     `;
