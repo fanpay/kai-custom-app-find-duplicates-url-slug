@@ -5,8 +5,7 @@ import { getCustomAppContext } from '@kontent-ai/custom-app-sdk';
 let appConfig = {
   projectId: '',
   deliveryApiKey: '',
-  managementApiKey: '',
-  previewApiKey: ''
+  managementApiKey: ''
 };
 
 const app = document.getElementById('app');
@@ -56,7 +55,6 @@ async function initializeConfig() {
   appConfig.projectId = (import.meta as any).env?.VITE_KONTENT_PROJECT_ID || process.env.KONTENT_PROJECT_ID || '';
   appConfig.deliveryApiKey = (import.meta as any).env?.VITE_KONTENT_API_KEY || process.env.KONTENT_API_KEY || '';
   appConfig.managementApiKey = (import.meta as any).env?.VITE_KONTENT_MANAGEMENT_API_KEY || process.env.KONTENT_MANAGEMENT_API_KEY || '';
-  appConfig.previewApiKey = (import.meta as any).env?.VITE_KONTENT_PREVIEW_API_KEY || process.env.KONTENT_PREVIEW_API_KEY || '';
 
   // Try to get context from Kontent.ai Custom App SDK
   try {
@@ -73,8 +71,7 @@ async function initializeConfig() {
   console.log('Final configuration:', {
     projectId: appConfig.projectId || 'NOT SET',
     deliveryApiKey: appConfig.deliveryApiKey ? '***PRESENT***' : 'NOT SET',
-    managementApiKey: appConfig.managementApiKey ? '***PRESENT***' : 'NOT SET',
-    previewApiKey: appConfig.previewApiKey ? '***PRESENT***' : 'NOT SET'
+    managementApiKey: appConfig.managementApiKey ? '***PRESENT***' : 'NOT SET'
   });
 }
 
@@ -102,13 +99,6 @@ function displayConfiguration() {
         <strong>Management API Key:</strong>
         <div style="background: #e9ecef; padding: 10px; border-radius: 4px; font-family: monospace; margin-top: 5px;">
           ${appConfig.managementApiKey ? '<span style="color: green;">✓ Present</span>' : '<span style="color: red;">✗ Not Set</span>'}
-        </div>
-      </div>
-      
-      <div style="margin-bottom: 15px;">
-        <strong>Preview API Key:</strong>
-        <div style="background: #e9ecef; padding: 10px; border-radius: 4px; font-family: monospace; margin-top: 5px;">
-          ${appConfig.previewApiKey ? '<span style="color: green;">✓ Present</span>' : '<span style="color: red;">✗ Not Set</span>'}
         </div>
       </div>
       
@@ -322,14 +312,15 @@ async function searchAllItemsDeliveryApi(targetSlug: string) {
     };
   } catch (error) {
     console.error('Delivery API all items search error:', error);
-    return { success: false, items: [], error: error.message, method: 'delivery-api-all-items' };
-  }
-}
+    return { 
+      success: false, 
+      items: [], 
       error: error instanceof Error ? error.message : String(error), 
       method: 'delivery-api-all-items' 
     };
   }
 }
+
 
 // Search using Management API (if key is available)
 async function searchWithManagementApi(targetSlug: string) {
