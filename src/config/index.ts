@@ -46,9 +46,9 @@ declare global {
   // Vite injects env vars prefixed with VITE_
   interface ImportMetaEnv {
     readonly VITE_KONTENT_PROJECT_ID?: string;
+    readonly VITE_KONTENT_ENVIRONMENT_ID?: string;
     readonly VITE_KONTENT_API_KEY?: string;
     readonly VITE_KONTENT_MANAGEMENT_API_KEY?: string;
-    readonly VITE_KONTENT_ENVIRONMENT_ID?: string;
     // Allow other arbitrary variables without forcing any
     readonly [key: string]: string | undefined;
   }
@@ -85,13 +85,13 @@ export function isConfigValid(): boolean {
  */
 export function getConfigStatus(): {
   projectId: string;
-  environmentId: boolean;
+  environmentId: string;
   deliveryApiKey: boolean;
   managementApiKey: boolean;
 } {
   return {
     projectId: appConfig.projectId,
-    environmentId: Boolean(appConfig.environmentId),
+    environmentId: appConfig.environmentId,
     deliveryApiKey: Boolean(appConfig.deliveryApiKey),
     managementApiKey: Boolean(appConfig.managementApiKey)
   };

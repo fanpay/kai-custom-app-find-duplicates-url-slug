@@ -45,7 +45,7 @@ export function renderConfiguration(): string {
       <h2 style="color: #495057; margin-top: 0;">Current Configuration</h2>
       
       <div style="margin-bottom: 15px;">
-        <strong>Environment:</strong>
+        <strong>Project ID:</strong>
         <div style="background: #e9ecef; padding: 10px; border-radius: 4px; font-family: monospace; margin-top: 5px;">
           ${config.projectId || '<span style="color: red;">NOT SET</span>'}
         </div>
