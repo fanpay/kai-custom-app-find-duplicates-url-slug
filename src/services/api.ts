@@ -19,6 +19,9 @@ import {
 const KONTENT_DELIVERY_API_BASE = 'https://deliver.kontent.ai';
 const KONTENT_MANAGEMENT_API_BASE = 'https://manage.kontent.ai/v2';
 
+// Languages to search explicitly
+const LANGUAGE_CODES = ['de', 'en', 'zh'];
+
 /**
  * Search for items with specific slug using direct API filtering
  */
@@ -31,44 +34,48 @@ export async function searchWithDeliveryApi(targetSlug: string): Promise<ApiResu
     console.log('\n--- Delivery API Direct Search ---');
     const headers = createApiHeaders(appConfig.deliveryApiKey);
     const searchConfigs = createSearchConfigs(targetSlug);
-    
-    for (const config of searchConfigs) {
-      const url = `${KONTENT_DELIVERY_API_BASE}/${appConfig.projectId}/items?${config.params.toString()}`;
-      console.log(`Trying URL (${config.field} field):`, url);
-      
-      const res = await fetch(url, { headers });
-      console.log(`Response status for ${config.field} field:`, res.status);
-      
-      if (res.ok) {
-        const data = await res.json();
-        console.log(`Response data for ${config.field}:`, {
-          itemCount: data.items?.length || 0,
-          pagination: data.pagination
-        });
+
+    let aggregatedItems: any[] = [];
+
+    for (const lang of LANGUAGE_CODES) {
+      for (const config of searchConfigs) {
+        const params = new URLSearchParams(config.params);
+        params.set('language', lang);
+        const url = `${KONTENT_DELIVERY_API_BASE}/${appConfig.projectId}/items?${params.toString()}`;
+        console.log(`Trying URL (${config.field} field, lang=${lang}):`, url);
         
-        // Filter items and log details
-        const items = filterItemsBySlug(data.items || [], targetSlug);
+        const res = await fetch(url, { headers });
+        console.log(`Response status for ${config.field} field (lang=${lang}):`, res.status);
         
-        // Log each item for debugging
-        (data.items || []).forEach((item: any) => {
-          logItemDetails(item, targetSlug);
-        });
-        
-        if (items.length > 0) {
-          console.log(`✅ Found ${items.length} items using ${config.field} field`);
-          return {
-            success: true,
-            items: items.map(formatItem),
-            method: 'delivery-api-direct',
-            field: config.field,
-            url
-          };
+        if (res.ok) {
+          const data = await res.json();
+          console.log(`Response data for ${config.field} (lang=${lang}):`, {
+            itemCount: data.items?.length || 0,
+            pagination: data.pagination
+          });
+          
+          // Filter items and log details
+          const items = filterItemsBySlug(data.items || [], targetSlug);
+          aggregatedItems = aggregatedItems.concat(items);
+          
+          // Log each item for debugging
+          (data.items || []).forEach((item: any) => {
+            logItemDetails(item, targetSlug);
+          });
         } else {
-          console.log(`No matching items found using ${config.field} field`);
+          console.log(`❌ Failed with ${config.field} field (lang=${lang}):`, res.status, res.statusText);
         }
-      } else {
-        console.log(`❌ Failed with ${config.field} field:`, res.status, res.statusText);
       }
+    }
+
+    if (aggregatedItems.length > 0) {
+      console.log(`✅ Found ${aggregatedItems.length} items across languages [${LANGUAGE_CODES.join(', ')}]`);
+      return {
+        success: true,
+        items: aggregatedItems.map(formatItem),
+        method: 'delivery-api-direct',
+        field: 'multi-language',
+      };
     }
     
     return { success: false, items: [], method: 'delivery-api-direct' };
@@ -145,51 +152,53 @@ export async function searchWithManagementApi(targetSlug: string): Promise<ApiRe
  */
 async function fetchAllPageItems(headers: Record<string, string>): Promise<any[]> {
   let allItems: any[] = [];
-  const pagination: PaginationInfo = {
-    skip: 0,
-    pageSize: 1000,
-    totalRequests: 0,
-    more: true
-  };
 
-  while (pagination.more) {
-    pagination.totalRequests++;
-    const url = `${KONTENT_DELIVERY_API_BASE}/${appConfig.projectId}/items?system.type=page&elements=url_slug,slug,system&limit=${pagination.pageSize}&skip=${pagination.skip}&system.language=*`;
-    
-    console.log(`Request ${pagination.totalRequests}: ${url}`);
-    
-    const res = await fetch(url, { headers });
-    if (!res.ok) {
-      throw new Error(`API Error: ${res.status} ${res.statusText}`);
-    }
-    
-    const data = await res.json();
-    console.log('API Response pagination:', data.pagination);
-    
-    const newItems = filterPageItemsWithSlugs(data.items || []);
-    allItems = allItems.concat(newItems);
-    
-    console.log(`Request ${pagination.totalRequests}: Fetched ${newItems.length} page items with slugs, running total: ${allItems.length}`);
-    console.log(`Raw items in this batch: ${data.items?.length || 0}`);
-    
-    // Update pagination
-    if (data.pagination?.next_page) {
-      pagination.skip += pagination.pageSize;
-      console.log(`More items available, next skip: ${pagination.skip}`);
-    } else {
-      console.log('No more pages available');
-      pagination.more = false;
-    }
-    
-    // Safety check
-    if (pagination.totalRequests > 50) {
-      console.log('Safety limit reached (50 requests), stopping');
-      break;
+  for (const lang of LANGUAGE_CODES) {
+    const pagination: PaginationInfo = {
+      skip: 0,
+      pageSize: 1000,
+      totalRequests: 0,
+      more: true
+    };
+
+    while (pagination.more) {
+      pagination.totalRequests++;
+      const url = `${KONTENT_DELIVERY_API_BASE}/${appConfig.projectId}/items?system.type=page&elements=url_slug,slug,system&limit=${pagination.pageSize}&skip=${pagination.skip}&language=${lang}`;
+      
+      console.log(`Request ${pagination.totalRequests} (lang=${lang}): ${url}`);
+      
+      const res = await fetch(url, { headers });
+      if (!res.ok) {
+        throw new Error(`API Error: ${res.status} ${res.statusText}`);
+      }
+      
+      const data = await res.json();
+      console.log(`API Response pagination (lang=${lang}):`, data.pagination);
+      
+      const newItems = filterPageItemsWithSlugs(data.items || []);
+      allItems = allItems.concat(newItems);
+      
+      console.log(`Request ${pagination.totalRequests} (lang=${lang}): Fetched ${newItems.length} page items with slugs, running total: ${allItems.length}`);
+      console.log(`Raw items in this batch (lang=${lang}): ${data.items?.length || 0}`);
+      
+      // Update pagination
+      if (data.pagination?.next_page) {
+        pagination.skip += pagination.pageSize;
+        console.log(`More items available, next skip (lang=${lang}): ${pagination.skip}`);
+      } else {
+        console.log(`No more pages available (lang=${lang})`);
+        pagination.more = false;
+      }
+      
+      // Safety check
+      if (pagination.totalRequests > 50) {
+        console.log('Safety limit reached (50 requests), stopping');
+        break;
+      }
     }
   }
 
-  console.log(`\n=== PAGINATION COMPLETE ===`);
-  console.log(`Total API requests made: ${pagination.totalRequests}`);
+  console.log(`\n=== PAGINATION COMPLETE (langs: ${LANGUAGE_CODES.join(', ')}) ===`);
   console.log(`Total page items with slugs: ${allItems.length}`);
 
   return allItems;

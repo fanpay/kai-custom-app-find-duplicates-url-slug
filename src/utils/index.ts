@@ -45,45 +45,41 @@ export function getUniqueSlugValues(items: any[]): string[] {
  */
 export function createSearchConfigs(targetSlug: string): SearchConfig[] {
   return [
-    // Try 'slug' field with type filter - ALL LANGUAGES
+    // Try 'slug' field with type filter
     {
       params: new URLSearchParams({
         'system.type': 'page',
         'elements.slug': targetSlug,
         'depth': '0',
-        'limit': '100',
-        'system.language': '*'  // Include all languages
+        'limit': '100'
       }),
       field: 'slug'
     },
-    // Try 'url_slug' field with type filter - ALL LANGUAGES
+    // Try 'url_slug' field with type filter
     {
       params: new URLSearchParams({
         'system.type': 'page',
         'elements.url_slug': targetSlug,
         'depth': '0',
-        'limit': '100',
-        'system.language': '*'  // Include all languages
+        'limit': '100'
       }),
       field: 'url_slug'
     },
-    // Try 'slug' field without type filter - ALL LANGUAGES
+    // Try 'slug' field without type filter
     {
       params: new URLSearchParams({
         'elements.slug': targetSlug,
         'depth': '0',
-        'limit': '100',
-        'system.language': '*'  // Include all languages
+        'limit': '100'
       }),
       field: 'slug'
     },
-    // Try 'url_slug' field without type filter - ALL LANGUAGES
+    // Try 'url_slug' field without type filter
     {
       params: new URLSearchParams({
         'elements.url_slug': targetSlug,
         'depth': '0',
-        'limit': '100',
-        'system.language': '*'  // Include all languages
+        'limit': '100'
       }),
       field: 'url_slug'
     }

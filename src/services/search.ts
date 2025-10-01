@@ -17,6 +17,9 @@ import {
   filterPageItemsWithSlugs
 } from '../utils';
 
+// Languages to search explicitly  
+const LANGUAGE_CODES = ['de', 'en', 'zh'];
+
 /**
  * Search for items with specific slug using multiple API approaches
  */
@@ -123,59 +126,68 @@ export async function findDuplicateSlugs(): Promise<DuplicateResult> {
  * Fetch all page items for duplicate checking with pagination
  */
 async function fetchAllPageItemsForDuplicateCheck(headers: Record<string, string>): Promise<any[]> {
-  let items: any[] = [];
-  let skip = 0;
-  const pageSize = 1000;
-  let more = true;
-  let totalRequests = 0;
+  let allItems: any[] = [];
 
-  while (more) {
-    totalRequests++;
-    const url = `https://deliver.kontent.ai/${appConfig.projectId}/items?system.type=page&elements=url_slug,slug,system&limit=${pageSize}&skip=${skip}&system.language=*`;
-    console.log(`Duplicate search request ${totalRequests}: ${url}`);
-    
-    const res = await fetch(url, { headers });
-    if (!res.ok) {
-      throw new Error(`Error fetching from API: ${res.status} ${res.statusText}`);
+  for (const lang of LANGUAGE_CODES) {
+    let items: any[] = [];
+    let skip = 0;
+    const pageSize = 1000;
+    let more = true;
+    let totalRequests = 0;
+
+    while (more) {
+      totalRequests++;
+      const url = `https://deliver.kontent.ai/${appConfig.projectId}/items?system.type=page&elements=url_slug,slug,system&limit=${pageSize}&skip=${skip}&language=${lang}`;
+      console.log(`Duplicate search request ${totalRequests} (lang=${lang}): ${url}`);
+      
+      const res = await fetch(url, { headers });
+      if (!res.ok) {
+        throw new Error(`Error fetching from API: ${res.status} ${res.statusText}`);
+      }
+      
+      const data = await res.json();
+      console.log(`Pagination info (lang=${lang}):`, data.pagination);
+      
+      const newItems = filterPageItemsWithSlugs(data.items || []);
+      items = items.concat(newItems);
+      
+      // Log language statistics for this batch
+      const languagesInBatch = [...new Set(newItems.map((item: any) => item.system?.language).filter(Boolean))];
+      console.log(`Request ${totalRequests} (lang=${lang}): Found ${newItems.length} page items with slugs, total: ${items.length}`);
+      console.log(`Languages in this batch: ${languagesInBatch.join(', ')}`);
+      
+      // Special check for tutorial_mari_page
+      const mariPages = newItems.filter((item: any) => item.system?.codename === 'tutorial_mari_page');
+      if (mariPages.length > 0) {
+        console.log(`🔍 Found tutorial_mari_page in batch ${totalRequests} (lang=${lang}):`, 
+          mariPages.map((item: any) => 
+            `${item.system.codename}(${item.system.language}) slug: ${item.elements?.url_slug?.value || item.elements?.slug?.value || 'none'}`
+          ).join(', ')
+        );
+      }
+      
+      // Update pagination
+      if (data.pagination?.next_page) {
+        skip += pageSize;
+        console.log(`More pages available, next skip (lang=${lang}): ${skip}`);
+      } else {
+        console.log(`No more pages - pagination complete (lang=${lang})`);
+        more = false;
+      }
+      
+      // Safety check
+      if (totalRequests > 50) {
+        console.log('Safety limit reached, stopping pagination');
+        break;
+      }
     }
     
-    const data = await res.json();
-    console.log('Pagination info:', data.pagination);
-    
-    const newItems = filterPageItemsWithSlugs(data.items || []);
-    items = items.concat(newItems);
-    
-    // Log language statistics for this batch
-    const languagesInBatch = [...new Set(newItems.map((item: any) => item.system?.language).filter(Boolean))];
-    console.log(`Request ${totalRequests}: Found ${newItems.length} page items with slugs, total: ${items.length}`);
-    console.log(`Languages in this batch: ${languagesInBatch.join(', ')}`);
-    
-    // Special check for tutorial_mari_page
-    const mariPages = newItems.filter((item: any) => item.system?.codename === 'tutorial_mari_page');
-    if (mariPages.length > 0) {
-      console.log(`🔍 Found tutorial_mari_page in batch ${totalRequests}:`, 
-        mariPages.map((item: any) => 
-          `${item.system.codename}(${item.system.language}) slug: ${item.elements?.url_slug?.value || item.elements?.slug?.value || 'none'}`
-        ).join(', ')
-      );
-    }
-    
-    // Update pagination
-    if (data.pagination?.next_page) {
-      skip += pageSize;
-      console.log(`More pages available, next skip: ${skip}`);
-    } else {
-      console.log('No more pages - pagination complete');
-      more = false;
-    }
-    
-    // Safety check
-    if (totalRequests > 50) {
-      console.log('Safety limit reached, stopping pagination');
-      break;
-    }
+    console.log(`Total requests made for ${lang}: ${totalRequests}`);
+    console.log(`Total items for ${lang}: ${items.length}`);
+    allItems = allItems.concat(items);
   }
 
-  console.log(`Total requests made: ${totalRequests}`);
-  return items;
+  console.log(`Total requests made across all languages: ${LANGUAGE_CODES.length}`);
+  console.log(`Total items across all languages: ${allItems.length}`);
+  return allItems;
 }
