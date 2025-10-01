@@ -27,7 +27,9 @@ export function createMainUI(): string {
         </div>
       </div>
       
-      <div id="result" class="result-container"></div>
+      <div id="result" class="result-container">
+        Click "Show Config" to verify settings, "Search Slug" to find specific slugs, or "Find All Duplicates" to scan the entire project for duplicate slugs.
+      </div>
     </div>
   `;
 }
@@ -43,9 +45,16 @@ export function renderConfiguration(): string {
       <h2 style="color: #495057; margin-top: 0;">Current Configuration</h2>
       
       <div style="margin-bottom: 15px;">
-        <strong>Environment/Project ID:</strong>
+        <strong>Environment:</strong>
         <div style="background: #e9ecef; padding: 10px; border-radius: 4px; font-family: monospace; margin-top: 5px;">
           ${config.projectId || '<span style="color: red;">NOT SET</span>'}
+        </div>
+      </div>
+
+      <div style="margin-bottom: 15px;">
+        <strong>Environment ID:</strong>
+        <div style="background: #e9ecef; padding: 10px; border-radius: 4px; font-family: monospace; margin-top: 5px;">
+          ${config.environmentId || '<span style="color: red;">✗ NOT SET</span>'}
         </div>
       </div>
       
@@ -60,13 +69,6 @@ export function renderConfiguration(): string {
         <strong>Management API Key:</strong>
         <div style="background: #e9ecef; padding: 10px; border-radius: 4px; font-family: monospace; margin-top: 5px;">
           ${config.managementApiKey ? '<span style="color: green;">✓ Present</span>' : '<span style="color: red;">✗ Not Set</span>'}
-        </div>
-      </div>
-      
-      <div style="margin-bottom: 15px;">
-        <strong>Environment ID:</strong>
-        <div style="background: #e9ecef; padding: 10px; border-radius: 4px; font-family: monospace; margin-top: 5px;">
-          ${config.environmentId ? '<span style="color: green;">✓ Present</span>' : '<span style="color: red;">✗ Not Set</span>'}
         </div>
       </div>
       
@@ -196,7 +198,6 @@ function renderDebugInfo(result: ApiResult): string {
         Exact slug matches: ${debug.deliveryApiAllItems?.exactMatches || 0}<br>
         Case-insensitive matches: ${debug.deliveryApiAllItems?.caseInsensitiveMatches || 0}<br>
         Similar slugs: ${debug.deliveryApiAllItems?.similarSlugs?.join(", ") || "None"}<br>
-        All "meli" slugs: ${debug.deliveryApiAllItems?.meliSlugs?.join(", ") || "None"}<br>
       </div>
       
       ${

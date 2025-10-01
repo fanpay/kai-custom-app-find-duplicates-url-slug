@@ -8,9 +8,9 @@ import type { AppConfig } from "../types";
 // Global configuration instance
 export const appConfig: AppConfig = {
   projectId: "",
-  deliveryApiKey: "",
-  managementApiKey: "",
   environmentId: "",
+  deliveryApiKey: "",
+  managementApiKey: ""
 };
 
 /**
@@ -19,9 +19,9 @@ export const appConfig: AppConfig = {
 export async function initializeConfig(): Promise<void> {
   // Get environment variables
   appConfig.projectId = getEnvVar("VITE_KONTENT_PROJECT_ID") || "";
+  appConfig.environmentId = getEnvVar("VITE_KONTENT_ENVIRONMENT_ID") || "";
   appConfig.deliveryApiKey = getEnvVar("VITE_KONTENT_DELIVERY_API_KEY") || "";
   appConfig.managementApiKey = getEnvVar("VITE_KONTENT_MANAGEMENT_API_KEY") || "";
-  appConfig.environmentId = getEnvVar("VITE_KONTENT_ENVIRONMENT_ID") || "";
 
   // Try to get context from Kontent.ai Custom App SDK
   try {
@@ -48,7 +48,7 @@ declare global {
     readonly VITE_KONTENT_PROJECT_ID?: string;
     readonly VITE_KONTENT_API_KEY?: string;
     readonly VITE_KONTENT_MANAGEMENT_API_KEY?: string;
-    readonly VITE_KONTENT_PREVIEW_API_KEY?: string;
+    readonly VITE_KONTENT_ENVIRONMENT_ID?: string;
     // Allow other arbitrary variables without forcing any
     readonly [key: string]: string | undefined;
   }
@@ -67,9 +67,9 @@ function getEnvVar(key: string): string {
 function logConfiguration(): void {
   console.log("Final configuration:", {
     projectId: appConfig.projectId || "NOT SET",
+    environmentId: appConfig.environmentId || "NOT SET",
     deliveryApiKey: appConfig.deliveryApiKey ? "***PRESENT***" : "NOT SET",
-    managementApiKey: appConfig.managementApiKey ? "***PRESENT***" : "NOT SET",
-    environmentId: appConfig.environmentId ? "***PRESENT***" : "NOT SET",
+    managementApiKey: appConfig.managementApiKey ? "***PRESENT***" : "NOT SET"
   });
 }
 
@@ -85,14 +85,14 @@ export function isConfigValid(): boolean {
  */
 export function getConfigStatus(): {
   projectId: string;
+  environmentId: boolean;
   deliveryApiKey: boolean;
   managementApiKey: boolean;
-  environmentId: boolean;
 } {
   return {
     projectId: appConfig.projectId,
-    deliveryApiKey: Boolean(appConfig.deliveryApiKey),
-    managementApiKey: Boolean(appConfig.managementApiKey),
     environmentId: Boolean(appConfig.environmentId),
+    deliveryApiKey: Boolean(appConfig.deliveryApiKey),
+    managementApiKey: Boolean(appConfig.managementApiKey)
   };
 }

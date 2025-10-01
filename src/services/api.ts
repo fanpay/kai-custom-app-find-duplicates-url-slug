@@ -238,11 +238,11 @@ function analyzeSlugData(allItems: RawKontentItem[], targetSlug: string) {
   // Find matches
   const exactMatches = allSlugs.filter((slug) => slug === targetSlug);
   const similarSlugs = findSimilarSlugs(allSlugs, targetSlug);
-  const meliSlugs = findSimilarSlugs(allSlugs, "meli");
+  //const meliSlugs = findSimilarSlugs(allSlugs, "meli");
 
   console.log(`Exact slug matches for "${targetSlug}": ${exactMatches.length}`);
   console.log("Similar slugs (containing target):", similarSlugs);
-  console.log('All slugs containing "meli":', meliSlugs);
+  //console.log('All slugs containing "meli":', meliSlugs);
 
   // Find matching items
   const matchingItems = allItems.filter((item) => {
@@ -266,7 +266,7 @@ function analyzeSlugData(allItems: RawKontentItem[], targetSlug: string) {
       totalRequests: 0, // Will be set by caller
       exactMatches: exactMatches.length,
       similarSlugs,
-      meliSlugs,
+      //meliSlugs,
       caseInsensitiveMatches: caseInsensitiveMatches.length,
       allSlugsCount: allSlugs.length,
     },

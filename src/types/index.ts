@@ -29,7 +29,7 @@ export interface ApiResult {
   totalRequests?: number;
   allSlugsCount?: number;
   similarSlugs?: string[];
-  meliSlugs?: string[];
+  //meliSlugs?: string[];
   exactMatches?: number;
   caseInsensitiveMatches?: number;
   note?: string;

@@ -1,70 +1,105 @@
 # Kontent.ai Duplicate Slug Finder
 
-Aplicación custom embebible (Vite + TypeScript) para detectar páginas (`system.type=page`) que comparten el mismo slug (`url_slug` o `slug`) a través de múltiples idiomas (por defecto: `de`, `en`, `zh`).
+Embeddable custom app (Vite + TypeScript) to detect page content items (`system.type=page`) sharing the same slug (`url_slug` or `slug`) across multiple languages (default: `de`, `en`, `zh`).
 
-## Características
-- Búsqueda de un slug específico (múltiples fuentes Delivery + Management API*)
-- Detección de slugs duplicados “reales” (mismo slug perteneciendo a distintos content items, no sólo variantes idiomáticas)
-- Agrupación y resumen por item mostrando variantes de idioma
-- Paginación automática (maneja >1000 items por idioma)
-- UI ligera sin frameworks pesados
-- Cabeceras de seguridad para despliegue en Netlify (CSP, etc.)
+## Features
+- Search for a specific slug (multiple approaches: Delivery API + optional Management API*)
+- Detect "real" duplicate slugs (same slug used by different content items, not just language variants)
+- Group & summarize per content item with its language variants
+- Automatic pagination (handles >1000 items per language)
+- Lightweight UI (no heavy frontend framework)
+- Security headers for Netlify deployment (CSP, etc.)
 
-(*Management API sólo si se configura la API key.)
+(*Management API only if the key is configured; consider keeping that key server-side.)
 
-## Requisitos de entorno
-Configura variables (por ejemplo en Netlify / entorno build):
+## Environment Variables
+Set these (e.g. in Netlify build settings):
 - `VITE_KONTENT_PROJECT_ID`
-- `VITE_KONTENT_DELIVERY_API_KEY` (opcional si proyecto público)
-- `VITE_KONTENT_MANAGEMENT_API_KEY` (opcional)
-- `VITE_KONTENT_PREVIEW_API_KEY` (opcional)
+- `VITE_KONTENT_DELIVERY_API_KEY` (optional if project is public)
+- `VITE_KONTENT_MANAGEMENT_API_KEY` (optional – avoid exposing if you plan serverless usage)
+- `VITE_KONTENT_PREVIEW_API_KEY` (optional)
+
+Notes:
+- Vite only injects variables prefixed with `VITE_` into the client bundle.
+- Sensitive keys (like Management) should ideally live in a serverless function instead of being exposed.
 
 ## Scripts
-- `npm run dev` – modo desarrollo Vite
-- `npm run build` – compila TypeScript y genera build de producción
-- `npm run preview` – vista previa local del build
-- `npm run format` – chequeo (lint + formato) con Biome sin escribir cambios
-- `npm run format:fix` – aplica fixes automáticos (formato + algunas reglas)
+- `npm run dev` – Vite dev server (HMR)
+- `npm run build` – TypeScript build + production bundle
+- `npm run preview` – Preview the production build locally
+- `npm run format` – Biome check (lint + format) read-only
+- `npm run format:fix` – Apply auto-fixes (format + safe lint fixes)
 
-## Formato y Lint (Biome solo)
-Se eliminó Prettier para evitar duplicidad. Biome cubre:
-- Formateo consistente de código
-- Reglas de lint (calidad + estilo)
+## Formatting & Linting (Biome Only)
+Prettier was removed to avoid duplication. Biome handles:
+- Consistent formatting
+- Style & quality lint rules
 - Auto-fixes
 
-Ejemplos:
+Examples:
 ```
-npm run format       # Ver qué cambiaría
-npm run format:fix   # Aplicar cambios
+npm run format       # Show needed changes
+npm run format:fix   # Apply them
 ```
 
-Si deseas ignorar rutas crea/ajusta un `biome.json` (ya presente) y usa `"files"` / `"ignore"`.
+Configure ignores or overrides in `biome.json`.
 
-## Flujo de detección de duplicados
-1. Se consultan items `page` por cada idioma configurado.
-2. Se filtran sólo los que tienen `url_slug` o `slug`.
-3. Se agrupan por valor de slug.
-4. Se descartan grupos donde sólo existe un content item (aunque tenga múltiples variantes de idioma).
-5. Cada grupo restante representa un “duplicado real”: mismo slug usado en distintos content items.
+## Architecture & Tech Stack
+**High-Level Flow**
+1. Bootstrap (`main.ts`) initializes config and binds UI events.
+2. Config loader (`src/config/index.ts`) resolves environment vars and (optionally) overrides project ID via Custom App context.
+3. Search services (`src/services/*.ts`) orchestrate Delivery API calls (and placeholder Management API calls) + pagination.
+4. Utils (`src/utils/index.ts`) provide grouping, filtering, slug analysis, and type shaping.
+5. UI layer (`src/components/ui.ts`) renders summaries and duplicate groups.
+6. Build (Vite) bundles TS → ESM + optimized assets for embedding (e.g. in an iframe/custom app host).
 
-## Estructura de tipos relevante
-- `DuplicateGroup` (interno) agrupa items y sus variantes de idioma.
-- `DuplicateResult.duplicates` expone arreglo compatible (`DuplicateItem[]`) para UI.
+**Modules / Responsibilities**
+- `config/` – Env + context resolution (non-sensitive logging)
+- `services/api.ts` – Raw API interaction, slug search strategies
+- `services/search.ts` – Duplicate detection orchestration
+- `utils/index.ts` – Data shaping (group by slug, aggregate languages, stats)
+- `components/ui.ts` – Pure rendering + DOM updates
+- `style.css` – Extracted styling (no inline injection)
 
-## Despliegue en Netlify
-1. Haz build: `npm run build`
-2. Publica carpeta `dist/`.
-3. Asegura variables de entorno configuradas en Netlify UI.
-4. (Opcional) Ajusta headers de seguridad en `netlify.toml` si se amplían orígenes permitidos.
+**Technologies**
+- Vite (dev server + build)
+- TypeScript (strong typing, no `any` / no non-null assertions policy)
+- Biome (formatter + linter)
+- Kontent.ai Delivery API (primary data source)
+- (Optional) Kontent.ai Management API (future enhancements)
+- Netlify (static hosting + optional functions + security headers)
 
-## Próximos pasos sugeridos
-- Unificar modelo público e interno (`DuplicateGroup`) si ya no se requiere compatibilidad con la forma antigua
-- Añadir tests ligeros para la lógica de agrupación
-- Agregar toggle de idiomas dinámico en la UI
+**Data Model (Duplicates)**
+- Raw items fetched per language → filtered to `page` + slug field present.
+- Group by slug → discard groups with only one distinct codename.
+- Each remaining group becomes a duplicate set (aggregate languages per content item).
+
+## Duplicate Detection Flow
+1. Fetch page items for each target language.
+2. Keep only items containing `url_slug` or `slug`.
+3. Group items by slug value.
+4. Exclude groups with a single distinct codename (only language variants).
+5. Return enriched duplicate groups and a simplified API-compatible result.
+
+## Relevant Types
+- `DuplicateGroup` – Internal enriched grouping (slug + aggregated language variants per content item)
+- `DuplicateResult` – Public return shape exposing a simplified list for UI
+
+## Deployment (Netlify)
+1. Build: `npm run build`
+2. Deploy the `dist/` folder
+3. Set required environment variables (Site settings → Build & deploy → Environment)
+4. (Optional) Adjust CSP / frame-ancestors in `netlify.toml` if embedding origins change
+
+## Suggested Next Steps
+- Unify public + internal duplicate models if legacy shape is no longer needed
+- Add lightweight tests for grouping logic
+- Add a language toggle / dynamic language list
+- Introduce a serverless function to proxy Management API (keep key secret)
 
 ---
-Mantén el código limpio ejecutando regularmente:
+Keep the code clean:
 ```
 npm run format:fix
 ```
-Esto asegura cero errores de lint y formato consistente.
+This maintains zero lint errors and consistent formatting.
