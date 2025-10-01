@@ -9,7 +9,6 @@ import './style.css';
 import { initializeConfig } from './config';
 import { searchSpecificSlug, findDuplicateSlugs } from './services/search';
 import { 
-  addStyles, 
   createMainUI, 
   renderConfiguration, 
   renderSearchResults, 
@@ -49,8 +48,7 @@ function setupUI(): void {
   const app = document.getElementById('app');
   if (!app) return;
 
-  // Inject styles and create UI
-  addStyles();
+  // Create UI (styles are loaded via imported stylesheet)
   app.innerHTML = createMainUI();
 
   // Get references to DOM elements
@@ -68,8 +66,6 @@ function setupUI(): void {
  */
 function setupEventListeners(): void {
   configBtn.addEventListener('click', handleConfigClick);
-
-  // When clicking Search Slug, show/hide the search section
   searchBtn.addEventListener('click', () => {
     const isHidden = searchSection.style.display === 'none';
     if (isHidden) {
