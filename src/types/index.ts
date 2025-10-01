@@ -15,7 +15,7 @@ export interface ContentItem {
   type: string;
   language: string;
   slug: string;
-  slugField: 'url_slug' | 'slug';
+  slugField: "url_slug" | "slug";
 }
 
 export interface ApiResult {
@@ -56,12 +56,12 @@ export interface DuplicateItemEntry {
   name: string;
   codename: string;
   language: string;
-  slugField: 'url_slug' | 'slug';
+  slugField: "url_slug" | "slug";
 }
 
 export interface SearchConfig {
   params: URLSearchParams;
-  field: 'slug' | 'url_slug';
+  field: "slug" | "url_slug";
 }
 
 export interface PaginationInfo {

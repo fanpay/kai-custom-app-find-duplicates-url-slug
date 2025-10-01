@@ -9,7 +9,9 @@
     "dev:functions": "netlify dev",
     "dev:functions:live": "netlify dev --live",
     "build": "tsc -b && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "format": "biome check .",
+    "format:fix": "biome check --write ."
   },
   "dependencies": {
     "@kontent-ai/custom-app-sdk": "^1.0.0",

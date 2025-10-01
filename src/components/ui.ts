@@ -2,8 +2,9 @@
  * UI components and rendering functions
  */
 
-import { ApiResult, ContentItem, DuplicateResult } from '../types';
-import { getConfigStatus } from '../config';
+import { getConfigStatus } from "../config";
+import type { ApiResult, ContentItem, DuplicateResult } from "../types";
+import type { DuplicateGroup, DuplicateSummaryItem } from "../utils";
 
 /**
  * Create the main UI structure
@@ -36,7 +37,7 @@ export function createMainUI(): string {
  */
 export function renderConfiguration(): string {
   const config = getConfigStatus();
-  
+
   return `
     <div class="config-section">
       <h2 style="color: #495057; margin-top: 0;">Current Configuration</h2>
@@ -80,13 +81,13 @@ export function renderConfiguration(): string {
  * Render search results
  */
 export function renderSearchResults(result: ApiResult, targetSlug: string): string {
-  if ('error' in result && result.error) {
+  if ("error" in result && result.error) {
     return `<p style="color:red; background:#ffe6e6; padding:10px; border-radius:4px;"><strong>Error:</strong> ${result.error}</p>`;
   }
-  
+
   const items = result.items || [];
   const debugInfo = renderDebugInfo(result);
-  
+
   if (items.length === 0) {
     return `
       <div class="status-warning">
@@ -96,103 +97,122 @@ export function renderSearchResults(result: ApiResult, targetSlug: string): stri
       </div>
       ${debugInfo}
     `;
-  } else {
-    // Calculate language statistics
-    const languageCount = new Set(items.map(item => item.language)).size;
-    const languageList = [...new Set(items.map(item => item.language))].sort((a, b) => a.localeCompare(b));
-    
-    return `
-      <div class="status-success">
-        <h2 style="margin-top:0;">✅ Found ${items.length} page(s) with slug "${targetSlug}"</h2>
-        <div class="search-stats">
-          <div class="stat-item">
-            <span class="stat-number">${items.length}</span>
-            <span class="stat-label">Total Items</span>
-          </div>
-          <div class="stat-item">
-            <span class="stat-number">${languageCount}</span>
-            <span class="stat-label">Language${languageCount > 1 ? 's' : ''}</span>
-          </div>
-        </div>
-        <div class="languages-found">
-          <strong>Languages found:</strong> ${languageList.map(lang => `<span class="lang-pill">${lang}</span>`).join(' ')}
-        </div>
-        ${renderItemCards(items)}
-      </div>
-      ${debugInfo}
-    `;
   }
+
+  // Calculate language statistics
+  const languageCount = new Set(items.map((item) => item.language)).size;
+  const languageList = [...new Set(items.map((item) => item.language))].sort((a, b) =>
+    a.localeCompare(b),
+  );
+
+  return `
+    <div class="status-success">
+      <h2 style="margin-top:0;">✅ Found ${items.length} page(s) with slug "${targetSlug}"</h2>
+      <div class="search-stats">
+        <div class="stat-item">
+          <span class="stat-number">${items.length}</span>
+          <span class="stat-label">Total Items</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-number">${languageCount}</span>
+          <span class="stat-label">Language${languageCount > 1 ? "s" : ""}</span>
+        </div>
+      </div>
+      <div class="languages-found">
+        <strong>Languages found:</strong> ${languageList.map((lang) => `<span class="lang-pill">${lang}</span>`).join(" ")}
+      </div>
+      ${renderItemCards(items)}
+    </div>
+    ${debugInfo}
+  `;
 }
 
 /**
  * Render duplicate results
  */
 export function renderDuplicateResults(result: DuplicateResult): string {
-  if ('error' in result && result.error) {
+  if ("error" in result && result.error) {
     return `<p style="color:red; background:#ffe6e6; padding:10px; border-radius:4px;"><strong>Error:</strong> ${result.error}</p>`;
   }
-  
+
   const duplicates = result.duplicates || [];
   const statsHtml = renderStatsBox(result);
-  
+
   if (duplicates.length === 0) {
-    return statsHtml + `
+    return `${statsHtml}
       <div class="status-warning">
         <h3 style="margin-top:0;">✅ No Duplicate Slugs Found</h3>
         <p>All page slugs in your environment are unique!</p>
-      </div>
-    `;
-  } else {
-    return statsHtml + `
-      <div class="status-error">
-        <h2 style="margin-top:0;">⚠️ Found ${duplicates.length} Duplicate Slug${duplicates.length > 1 ? 's' : ''}</h2>
-        ${renderDuplicateCards(duplicates)}
-      </div>
-    `;
+      </div>`;
   }
+  // Adapt DuplicateItem[] shape to DuplicateGroup[] expected by renderDuplicateCards
+  const adaptedDuplicates: DuplicateGroup[] = duplicates.map((d) => ({
+    slug: d.slug,
+    items: d.items.map((i) => ({
+      name: i.name,
+      codename: i.codename,
+      languages: [i.language],
+      language: i.language,
+      slugField: i.slugField,
+      languageCount: 1,
+    })),
+  }));
+
+  return `${statsHtml}
+    <div class="status-error">
+      <h2 style="margin-top:0;">⚠️ Found ${duplicates.length} Duplicate Slug${duplicates.length > 1 ? "s" : ""}</h2>
+      ${renderDuplicateCards(adaptedDuplicates)}
+    </div>`;
 }
 
 /**
  * Render debug information section
  */
 function renderDebugInfo(result: ApiResult): string {
-  const debug = result as any;
-  
-  if (!debug) return '';
-  
+  const debug = result; // already typed
+
+  if (!debug) return "";
+
   return `
     <div class="debug-section">
       <h3 style="margin-top:0; color:#495057;">Debug Information</h3>
       
       <h4>Delivery API Direct Search:</h4>
       <div style="font-size:12px; margin-bottom:10px;">
-        Success: ${debug.deliveryApi?.success ? '✅' : '❌'}<br>
+        Success: ${debug.deliveryApi?.success ? "✅" : "❌"}<br>
         Items found: ${debug.deliveryApi?.items?.length || 0}<br>
         Method: ${debug.deliveryApi?.method}<br>
-        Field used: ${debug.deliveryApi?.field || 'None'}<br>
-        ${debug.deliveryApi?.url ? `URL: ${debug.deliveryApi.url}` : ''}
+        Field used: ${debug.deliveryApi?.field || "None"}<br>
+        ${debug.deliveryApi?.url ? `URL: ${debug.deliveryApi.url}` : ""}
       </div>
       
       <h4>Delivery API All Items Search:</h4>
       <div style="font-size:12px; margin-bottom:10px;">
-        Success: ${debug.deliveryApiAllItems?.success ? '✅' : '❌'}<br>
+        Success: ${debug.deliveryApiAllItems?.success ? "✅" : "❌"}<br>
         Items found: ${debug.deliveryApiAllItems?.items?.length || 0}<br>
         Total API requests: ${debug.deliveryApiAllItems?.totalRequests || 0}<br>
         Total items fetched: ${debug.deliveryApiAllItems?.totalItems || 0}<br>
         Total unique slugs: ${debug.deliveryApiAllItems?.allSlugsCount || 0}<br>
         Exact slug matches: ${debug.deliveryApiAllItems?.exactMatches || 0}<br>
         Case-insensitive matches: ${debug.deliveryApiAllItems?.caseInsensitiveMatches || 0}<br>
-        Similar slugs: ${debug.deliveryApiAllItems?.similarSlugs?.join(', ') || 'None'}<br>
-        All "meli" slugs: ${debug.deliveryApiAllItems?.meliSlugs?.join(', ') || 'None'}<br>
+        Similar slugs: ${debug.deliveryApiAllItems?.similarSlugs?.join(", ") || "None"}<br>
+        All "meli" slugs: ${debug.deliveryApiAllItems?.meliSlugs?.join(", ") || "None"}<br>
       </div>
       
-      ${debug.managementApi ? `
+      ${
+        debug.managementApi
+          ? `
         <h4>Management API Search:</h4>
         <div style="font-size:12px;">
-          ${(() => { const ok = debug.managementApi.success; return `Success: ${ok ? '✅' : '❌'}`; })()}<br>
-          Note: ${debug.managementApi.note || 'No additional info'}
+          ${(() => {
+            const ok = debug.managementApi.success;
+            return `Success: ${ok ? "✅" : "❌"}`;
+          })()}<br>
+          Note: ${debug.managementApi.note || "No additional info"}
         </div>
-      ` : ''}
+      `
+          : ""
+      }
       
       <div style="margin-top:10px; font-size:11px; color:#6c757d;">
         Check browser console for detailed logs
@@ -206,20 +226,26 @@ function renderDebugInfo(result: ApiResult): string {
  */
 function renderItemCards(items: ContentItem[]): string {
   // Group items by language for better organization
-  const itemsByLanguage = items.reduce((acc, item) => {
-    const lang = item.language || 'Unknown';
-    if (!acc[lang]) acc[lang] = [];
-    acc[lang].push(item);
-    return acc;
-  }, {} as Record<string, ContentItem[]>);
+  const itemsByLanguage = items.reduce(
+    (acc, item) => {
+      const lang = item.language || "Unknown";
+      if (!acc[lang]) acc[lang] = [];
+      acc[lang].push(item);
+      return acc;
+    },
+    {} as Record<string, ContentItem[]>,
+  );
 
   // Generate HTML for each language group
   const languageGroups = Object.entries(itemsByLanguage)
     .sort(([a], [b]) => a.localeCompare(b))
-    .map(([language, langItems]) => `
+    .map(
+      ([language, langItems]) => `
       <div class="language-group">
-        <h4 class="language-header">🌐 Language: ${language} (${langItems.length} item${langItems.length > 1 ? 's' : ''})</h4>
-        ${langItems.map((item: ContentItem) => `
+        <h4 class="language-header">🌐 Language: ${language} (${langItems.length} item${langItems.length > 1 ? "s" : ""})</h4>
+        ${langItems
+          .map(
+            (item: ContentItem) => `
           <div class="item-card">
             <div class="item-header">
               <strong>${item.name}</strong>
@@ -232,22 +258,29 @@ function renderItemCards(items: ContentItem[]): string {
               <div><strong>Field type:</strong> <span style="font-family:monospace; color:#666;">${item.slugField}</span></div>
             </div>
           </div>
-        `).join('')}
+        `,
+          )
+          .join("")}
       </div>
-    `);
+    `,
+    );
 
-  return languageGroups.join('');
+  return languageGroups.join("");
 }
 
 /**
  * Render duplicate cards
  */
-function renderDuplicateCards(duplicates: any[]): string {
-  return duplicates.map((d: any) => {
-    const contentItemsCount = d.items.length;
-    const totalLanguageVariants = d.items.reduce((sum: number, item: any) => sum + (item.languageCount || 1), 0);
+function renderDuplicateCards(duplicates: DuplicateGroup[]): string {
+  return duplicates
+    .map((d: DuplicateGroup) => {
+      const contentItemsCount = d.items.length;
+      const totalLanguageVariants = d.items.reduce(
+        (sum: number, item: DuplicateSummaryItem) => sum + (item.languageCount || 1),
+        0,
+      );
 
-    return `
+      return `
       <div class="duplicate-card">
         <div class="duplicate-header">
           <h4><span class="slug-value">${d.slug}</span></h4>
@@ -263,7 +296,9 @@ function renderDuplicateCards(duplicates: any[]): string {
           </div>
           
           <div class="content-items">
-            ${d.items.map((item: any) => `
+            ${d.items
+              .map(
+                (item: DuplicateSummaryItem) => `
               <div class="content-item-card">
                 <div class="content-header">
                   <h5>${item.name}</h5>
@@ -271,20 +306,23 @@ function renderDuplicateCards(duplicates: any[]): string {
                 </div>
                 <div class="content-details">
                   <div class="item-meta">
-                    <strong>Languages:</strong> ${item.languages ? item.languages.map((lang: string) => `<span class="lang-pill">${lang}</span>`).join(' ') : item.language}
+                    <strong>Languages:</strong> ${item.languages ? item.languages.map((lang: string) => `<span class="lang-pill">${lang}</span>`).join(" ") : item.language}
                   </div>
                   <div class="item-meta">
                     <strong>Field type:</strong> <span class="field-type">${item.slugField}</span>
                   </div>
-                  ${item.languageCount > 1 ? `<div class="item-meta"><strong>Total language variants:</strong> ${item.languageCount}</div>` : ''}
+                  ${item.languageCount > 1 ? `<div class="item-meta"><strong>Total language variants:</strong> ${item.languageCount}</div>` : ""}
                 </div>
               </div>
-            `).join('')}
+            `,
+              )
+              .join("")}
           </div>
         </div>
       </div>
     `;
-  }).join('');
+    })
+    .join("");
 }
 
 /**
@@ -292,14 +330,14 @@ function renderDuplicateCards(duplicates: any[]): string {
  */
 function renderStatsBox(result: DuplicateResult): string {
   const duplicates = result.duplicates || [];
-  
+
   return `
     <div class="stats-box">
       <h3 style="margin-top:0; color:#0066cc;">Search Statistics</h3>
       <div style="font-size:14px;">
-        <strong>Total API requests:</strong> ${result.totalRequests || 'N/A'}<br>
-        <strong>Total page items processed:</strong> ${result.totalItems || 'N/A'}<br>
-        <strong>Unique slugs found:</strong> ${result.uniqueSlugs || 'N/A'}<br>
+        <strong>Total API requests:</strong> ${result.totalRequests || "N/A"}<br>
+        <strong>Total page items processed:</strong> ${result.totalItems || "N/A"}<br>
+        <strong>Unique slugs found:</strong> ${result.uniqueSlugs || "N/A"}<br>
         <strong>Duplicate slugs found:</strong> ${duplicates.length}<br>
       </div>
       <div style="margin-top:10px; font-size:12px; color:#666;">
