@@ -399,6 +399,64 @@ export function addStyles(): void {
       font-size: 12px;
       font-weight: 600;
     }
+
+    /* Enhanced duplicate detection styles */
+    .duplicate-content {
+      padding: 16px;
+    }
+
+    .duplicate-explanation {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      padding: 12px;
+      border-radius: 6px;
+      margin-bottom: 16px;
+      color: #b91c1c;
+    }
+
+    .content-items {
+      display: grid;
+      gap: 12px;
+    }
+
+    .content-item-card {
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 16px;
+    }
+
+    .content-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .content-header h5 {
+      margin: 0;
+      color: #374151;
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .codename-badge {
+      background: #e5e7eb;
+      color: #374151;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-family: monospace;
+      font-weight: 500;
+    }
+
+    .content-details {
+      display: grid;
+      gap: 8px;
+      font-size: 14px;
+    }
   `;
   document.head.appendChild(styleElement);
 }
@@ -642,49 +700,48 @@ function renderItemCards(items: ContentItem[]): string {
  */
 function renderDuplicateCards(duplicates: any[]): string {
   return duplicates.map((d: any) => {
-    // Group items by language for better visualization
-    const itemsByLanguage = d.items.reduce((acc: any, item: any) => {
-      const lang = item.language || 'Unknown';
-      if (!acc[lang]) acc[lang] = [];
-      acc[lang].push(item);
-      return acc;
-    }, {});
-
-    const languageCount = Object.keys(itemsByLanguage).length;
-    const totalItems = d.items.length;
+    const contentItemsCount = d.items.length;
+    const totalLanguageVariants = d.items.reduce((sum: number, item: any) => sum + (item.languageCount || 1), 0);
 
     return `
       <div class="duplicate-card">
         <div class="duplicate-header">
           <h4><span class="slug-value">${d.slug}</span></h4>
           <div class="duplicate-stats">
-            <span class="stat-badge stat-danger">${totalItems} duplicates</span>
-            <span class="stat-badge stat-info">${languageCount} language${languageCount > 1 ? 's' : ''}</span>
+            <span class="stat-badge stat-danger">${contentItemsCount} different content items</span>
+            <span class="stat-badge stat-info">${totalLanguageVariants} total variants</span>
           </div>
         </div>
         
-        <div class="duplicate-languages">
-          ${Object.entries(itemsByLanguage)
-            .sort(([a], [b]) => a.localeCompare(b))
-            .map(([language, langItems]) => {
-              const itemsArray = langItems as any[];
-              return `
-                <div class="language-section">
-                  <h5 class="language-title">🌐 ${language} (${itemsArray.length} item${itemsArray.length > 1 ? 's' : ''})</h5>
-                  <ul class="items-list">
-                    ${itemsArray.map((item: any) => `
-                      <li class="duplicate-item">
-                        <div class="item-name">${item.name || item}</div>
-                        ${item.codename ? `<div class="item-meta">Codename: <code>${item.codename}</code></div>` : ''}
-                        ${item.slugField ? `<div class="item-meta">Field: <span class="field-type">${item.slugField}</span></div>` : ''}
-                      </li>
-                    `).join('')}
-                  </ul>
+        <div class="duplicate-content">
+          <div class="duplicate-explanation">
+            <strong>⚠️ Duplicate Issue:</strong> ${contentItemsCount} different content items are using the same slug "${d.slug}"
+          </div>
+          
+          <div class="content-items">
+            ${d.items.map((item: any) => `
+              <div class="content-item-card">
+                <div class="content-header">
+                  <h5>${item.name}</h5>
+                  <span class="codename-badge">Codename: ${item.codename}</span>
                 </div>
-              `;
-            }).join('')}
+                <div class="content-details">
+                  <div class="item-meta">
+                    <strong>Languages:</strong> ${item.languages ? item.languages.map((lang: string) => `<span class="lang-pill">${lang}</span>`).join(' ') : item.language}
+                  </div>
+                  <div class="item-meta">
+                    <strong>Field type:</strong> <span class="field-type">${item.slugField}</span>
+                  </div>
+                  ${item.languageCount > 1 ? `<div class="item-meta"><strong>Total language variants:</strong> ${item.languageCount}</div>` : ''}
+                </div>
+              </div>
+            `).join('')}
+          </div>
         </div>
       </div>
+    `;
+  }).join('');
+}
     `;
   }).join('');
 }

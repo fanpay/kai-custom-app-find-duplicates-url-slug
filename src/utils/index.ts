@@ -146,7 +146,7 @@ export function countItemsByFieldType(items: any[]): { urlSlugCount: number; slu
 }
 
 /**
- * Group items by slug value
+ * Group items by slug value and identify true duplicates (different content items with same slug)
  */
 export function groupItemsBySlug(items: any[]): Map<string, any[]> {
   const slugMap = new Map<string, any[]>();
@@ -172,12 +172,38 @@ export function groupItemsBySlug(items: any[]): Map<string, any[]> {
 }
 
 /**
- * Filter duplicate entries from slug map
+ * Filter duplicate entries from slug map - only return true duplicates (different codenames with same slug)
  */
 export function filterDuplicates(slugMap: Map<string, any[]>): Array<{ slug: string; items: any[] }> {
   return Array.from(slugMap.entries())
-    .filter(([slug, arr]) => arr.length > 1)
-    .map(([slug, arr]) => ({ slug, items: arr }));
+    .filter(([slug, arr]) => {
+      // Group by codename to identify unique content items
+      const uniqueCodenames = new Set(arr.map(item => item.codename));
+      // Only consider it a duplicate if there are multiple different content items (codenames)
+      return uniqueCodenames.size > 1;
+    })
+    .map(([slug, arr]) => {
+      // Group items by codename for better display
+      const groupedByCodename = arr.reduce((acc, item) => {
+        if (!acc[item.codename]) {
+          acc[item.codename] = [];
+        }
+        acc[item.codename].push(item);
+        return acc;
+      }, {} as Record<string, any[]>);
+      
+      // Create summary items showing each content item and its languages
+      const summaryItems = Object.entries(groupedByCodename).map(([codename, languageItems]) => ({
+        name: languageItems[0].name,
+        codename,
+        languages: languageItems.map(item => item.language).sort(),
+        language: languageItems.map(item => item.language).join(', '), // For backward compatibility
+        slugField: languageItems[0].slugField,
+        languageCount: languageItems.length
+      }));
+      
+      return { slug, items: summaryItems };
+    });
 }
 
 /**

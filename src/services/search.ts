@@ -98,12 +98,25 @@ export async function findDuplicateSlugs(): Promise<DuplicateResult> {
     const slugMap = groupItemsBySlug(allItems);
     const duplicates = filterDuplicates(slugMap);
     
-    console.log(`Found ${duplicates.length} duplicate slugs`);
+    console.log(`\n=== DUPLICATE ANALYSIS RESULTS ===`);
+    console.log(`Found ${duplicates.length} TRUE duplicate slugs (different content items sharing same slug)`);
+    
     duplicates.forEach(d => {
-      console.log(`- "${d.slug}": ${d.items.length} items`);
-      // Special logging for lorem-ipsum and tutorial_mari_page debugging
-      if (d.slug === 'lorem-ipsum' || d.items.some((item: any) => item.codename === 'tutorial_mari_page')) {
-        console.log(`  🔍 DEBUG - ${d.slug} items:`, d.items.map((item: any) => `${item.codename}(${item.language})`).join(', '));
+      const contentItems = d.items.length;
+      const totalVariants = d.items.reduce((sum, item) => sum + (item.languageCount || 1), 0);
+      console.log(`\n- Slug "${d.slug}": ${contentItems} different content items, ${totalVariants} total language variants`);
+      
+      d.items.forEach((item: any) => {
+        const languages = item.languages ? item.languages.join(', ') : item.language;
+        console.log(`  * ${item.name} (${item.codename}) - Languages: [${languages}]`);
+      });
+      
+      // Special logging for lorem-ipsum debugging
+      if (d.slug === 'lorem-ipsum') {
+        console.log(`  🔍 LOREM-IPSUM DEBUG - This shows different content items sharing the same slug:`);
+        d.items.forEach((item: any) => {
+          console.log(`    - Content Item: ${item.name} (${item.codename}) in languages: [${item.languages ? item.languages.join(', ') : item.language}]`);
+        });
       }
     });
 
