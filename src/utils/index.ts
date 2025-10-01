@@ -184,13 +184,13 @@ export function filterDuplicates(slugMap: Map<string, any[]>): Array<{ slug: str
     })
     .map(([slug, arr]) => {
       // Group items by codename for better display
-      const groupedByCodename = arr.reduce((acc, item) => {
+      const groupedByCodename = arr.reduce((acc: Record<string, { name: string; codename: string; language: string; slugField: string }[]>, item) => {
         if (!acc[item.codename]) {
           acc[item.codename] = [];
         }
         acc[item.codename].push(item);
         return acc;
-      }, {} as Record<string, any[]>);
+      }, {} as Record<string, { name: string; codename: string; language: string; slugField: string }[]>);
       
       // Create summary items showing each content item and its languages
       const summaryItems = Object.entries(groupedByCodename).map(([codename, languageItems]) => ({

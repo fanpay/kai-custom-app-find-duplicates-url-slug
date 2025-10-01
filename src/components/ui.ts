@@ -742,9 +742,6 @@ function renderDuplicateCards(duplicates: any[]): string {
     `;
   }).join('');
 }
-    `;
-  }).join('');
-}
 
 /**
  * Render statistics box
