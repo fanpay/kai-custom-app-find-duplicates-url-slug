@@ -64,9 +64,9 @@ export function renderConfiguration(): string {
       </div>
       
       <div style="margin-bottom: 15px;">
-        <strong>Preview API Key:</strong>
+        <strong>Environment ID:</strong>
         <div style="background: #e9ecef; padding: 10px; border-radius: 4px; font-family: monospace; margin-top: 5px;">
-          ${config.previewApiKey ? '<span style="color: green;">✓ Present</span>' : '<span style="color: red;">✗ Not Set</span>'}
+          ${config.environmentId ? '<span style="color: green;">✓ Present</span>' : '<span style="color: red;">✗ Not Set</span>'}
         </div>
       </div>
       

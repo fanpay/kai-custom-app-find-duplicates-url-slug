@@ -10,7 +10,7 @@ export const appConfig: AppConfig = {
   projectId: "",
   deliveryApiKey: "",
   managementApiKey: "",
-  previewApiKey: "",
+  environmentId: "",
 };
 
 /**
@@ -19,9 +19,9 @@ export const appConfig: AppConfig = {
 export async function initializeConfig(): Promise<void> {
   // Get environment variables
   appConfig.projectId = getEnvVar("VITE_KONTENT_PROJECT_ID") || "";
-  appConfig.deliveryApiKey = getEnvVar("VITE_KONTENT_API_KEY") || "";
+  appConfig.deliveryApiKey = getEnvVar("VITE_KONTENT_DELIVERY_API_KEY") || "";
   appConfig.managementApiKey = getEnvVar("VITE_KONTENT_MANAGEMENT_API_KEY") || "";
-  appConfig.previewApiKey = getEnvVar("VITE_KONTENT_PREVIEW_API_KEY") || "";
+  appConfig.environmentId = getEnvVar("VITE_KONTENT_ENVIRONMENT_ID") || "";
 
   // Try to get context from Kontent.ai Custom App SDK
   try {
@@ -69,7 +69,7 @@ function logConfiguration(): void {
     projectId: appConfig.projectId || "NOT SET",
     deliveryApiKey: appConfig.deliveryApiKey ? "***PRESENT***" : "NOT SET",
     managementApiKey: appConfig.managementApiKey ? "***PRESENT***" : "NOT SET",
-    previewApiKey: appConfig.previewApiKey ? "***PRESENT***" : "NOT SET",
+    environmentId: appConfig.environmentId ? "***PRESENT***" : "NOT SET",
   });
 }
 
@@ -87,12 +87,12 @@ export function getConfigStatus(): {
   projectId: string;
   deliveryApiKey: boolean;
   managementApiKey: boolean;
-  previewApiKey: boolean;
+  environmentId: boolean;
 } {
   return {
     projectId: appConfig.projectId,
     deliveryApiKey: Boolean(appConfig.deliveryApiKey),
     managementApiKey: Boolean(appConfig.managementApiKey),
-    previewApiKey: Boolean(appConfig.previewApiKey),
+    environmentId: Boolean(appConfig.environmentId),
   };
 }

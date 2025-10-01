@@ -6,7 +6,7 @@ export interface AppConfig {
   projectId: string;
   deliveryApiKey: string;
   managementApiKey: string;
-  previewApiKey: string;
+  environmentId: string;
 }
 
 export interface ContentItem {
